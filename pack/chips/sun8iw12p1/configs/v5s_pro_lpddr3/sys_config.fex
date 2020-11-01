@@ -31,27 +31,26 @@ storage_type    = -1
 ;----------------------------------------------------------------------------------
 
 [power_sply]
-;dcdc1_vol                  = 1003300
-dcdc2_vol                  	= 1000900
-;dc1sw_vol               	= 1003300
-dcdc3_vol                  = 1000940
-;dcdc4_vol                  = 1800
+;dcdc1_vol                  = 3300
+dcdc2_vol                  = 1000900
+dcdc4_vol                  = 1001800
 ;dcdc5_vol                  = 1200
 ;dc5ldo_vol                 = 900
-;aldo1_vol                  = 1002800
-;aldo2_vol                  = 1001200
+;aldo1_vol                  = 3300
+;aldo2_vol                  = 3300
 ;aldo3_vol                  = 800
-dldo1_vol                  = 1003200
+;dldo1_vol                  = 2800
 ;dldo2_vol                  = 900
-;eldo1_vol                  = 1001800
+eldo1_vol                   = 1001800
 eldo2_vol                  = 1003300
 eldo3_vol                  = 1003300
-;gpio0_vol                  = 1001800
-;gpio1_vol                  = 1001800
+;gpio0_vol                  = 1800
+;gpio1_vol                  = 3300
+;dcdc1sw_vol                 = 3300
 
 [card_boot]
 logical_start   = 40960
-sprite_gpio0    = port:PB07<1><default><default><0> 
+sprite_gpio0    =
 
 ;---------------------------------------------------------------------------------------------------------
 ; if 1 == standby_mode, then support super standby;
@@ -91,8 +90,8 @@ sdc_ex_dly_used = 2
 
 [twi_para]
 twi_port        = 0
-twi_scl         = port:PL0<2><default><default><default>
-twi_sda         = port:PL1<2><default><default><default>
+twi_scl         = port:PH0<2><default><default><default>
+twi_sda         = port:PH1<2><default><default><default>
 
 [uart_para]
 uart_debug_port = 0
@@ -100,11 +99,11 @@ uart_debug_tx   = port:PB09<2><1><default><default>
 uart_debug_rx   = port:PB10<2><1><default><default>
 
 [jtag_para]
-jtag_enable     = 0
-jtag_ms         = port:PF00<3><default><default><default>
-jtag_ck         = port:PF01<3><default><default><default>
-jtag_do         = port:PF03<3><default><default><default>
-jtag_di         = port:PF05<3><default><default><default>
+jtag_enable     = 1
+jtag_ms         = port:PH9<3><default><default><default>
+jtag_ck         = port:PH10<3><default><default><default>
+jtag_do         = port:PH11<3><default><default><default>
+jtag_di         = port:PH12<3><default><default><default>
 
 [clock]
 pll4            = 300
@@ -148,11 +147,52 @@ dram_tpr13	= 0x04000284
 ;os life cycle para configuration
 ;----------------------------------------------------------------------------------
 
+;------------------------------------------------------------------------------;
+; 10/100/100Mbps Ethernet MAC Controller Configure                             ;
+;------------------------------------------------------------------------------;
+;   配置选项：                                                                 ;
+;   gmac_used  ---  1: gmac used, 0: not used                                  ;
+;------------------------------------------------------------------------------;
+;         MII  GMII  RGMII        MII  GMII  RGMII        MII  GMII  RGMII     ;
+;PA00~03  *     *      *    PA10        *      *    PA20   *    *      *       ;
+;   PA04        *         PA11~14  *    *      *    PA21   *    *              ;
+;   PA05        *           PA15        *           PA22   *    *              ;
+;   PA06        *           PA16        *           PA23   *    *              ;
+;   PA07        *           PA17        *           PA24   *    *              ;
+;   PA08  *     *           PA18        *           PA25        *      *       ;
+;   PA09  *     *      *    PA19   *    *      *  PA26~27  *    *      *       ;
+;------------------------------------------------------------------------------;
+[gmac0]
+gmac0_used          = 0
+phy-mode           = "rgmii"
+gmac_rxd3          = port:PA00<2><default><default><default>
+gmac_rxd2          = port:PA01<2><default><default><default>
+gmac_rxd1          = port:PA02<2><default><default><default>
+gmac_rxd0          = port:PA03<2><default><default><default>
+gmac_rxck          = port:PA04<2><default><default><default>
+gmac_rxctl         = port:PA05<2><default><default><default>
+gmac_clkin         = port:PA06<2><default><default><default>
+gmac_txd3          = port:PA07<2><default><default><default>
+gmac_txd2          = port:PA08<2><default><default><default>
+gmac_txd1          = port:PA09<2><default><default><default>
+gmac_txd0          = port:PA10<2><default><default><default>
+gmac_txck          = port:PA11<2><default><default><default>
+gmac_txctl         = port:PA12<2><default><default><default>
+gmac_mdc           = port:PA13<2><default><default><default>
+gmac_mdio          = port:PA14<2><default><default><default>
+gmac_ephy25m       = port:PA15<2><default><default><default>
+gmac-power0        = ""
+gmac-power1        = ""
+gmac-power2        = ""
+tx-delay           = 7
+rx-delay           = 31
+use_ephy25m        = 1
+
 ;----------------------------------------------------------------------------------
 ;i2c configuration
 ;----------------------------------------------------------------------------------
 [twi0]
-twi0_used        = 1
+twi0_used        = 0
 twi0_scl         = port:PH0<2><default><default><default>
 twi0_sda         = port:PH1<2><default><default><default>
 
@@ -163,21 +203,33 @@ twi1_sda         = port:PH3<2><default><default><default>
 
 [twi2]
 twi2_used        = 0
-twi2_scl         = port:PI01<5><default><default><default>
-twi2_sda         = port:PI02<5><default><default><default>
+twi2_scl         = port:PE16<3><default><default><default>
+twi2_sda         = port:PE17<3><default><default><default>
 
 [twi3]
-twi3_used        = 1
-twi3_scl         = port:PI08<5><default><default><default>
-twi3_sda         = port:PI09<5><default><default><default>
+twi3_used        = 0
+twi3_scl         = port:PH9<2><default><default><default>
+twi3_sda         = port:PH10<2><default><default><default>
 
 ;----------------------------------------------------------------------------------
-;inv_mpu_6050 configuration
+; ctp_s2350ito-g tp configuration
+;wakeup output function
+;reg: i2c addr of tp
+;ctp-ini-gpio: irq gpio of tp
+;ctp-rst-gpio: reset gpio of tp
 ;----------------------------------------------------------------------------------
+[twi0/msg2xxx]
+msg2xxx_used = 0
+compatible        = "msg2xxx"
+reg               = 0x4c
+ctp_screen_max_x    = 1080
+ctp_screen_max_y    = 1920
+ctp_exchange_x_y_flag = 0
+ctp_revert_x_flag   = 0
+ctp_revert_y_flag   = 0
+ctp-int-gpio      = port:PB09<1><default><default><default>
+ctp-rst-gpio      = port:PB10<1><default><default><1>
 
-[imu_para]
-imu_para_used       = 1
-imu-int-gpio        = port:PB05<0><default><default><default>
 
 ;----------------------------------------------------------------------------------
 ;uart configuration
@@ -278,15 +330,38 @@ channel_select			= 0x01
 channel_data_select		= 0
 channel_compare_select		= 0x01
 channel_cld_select		= 0x01
-channel_chd_select		= 0x04
+channel_chd_select		= 0x00
 channel0_compare_lowdata	= 1700000
 channel0_compare_higdata	= 1200000
 channel1_compare_lowdata	= 460000
 channel1_compare_higdata	= 1200000
 channel2_compare_lowdata	= 460000
-channel2_compare_higdata	= 200000
+channel2_compare_higdata	= 1200000
 channel3_compare_lowdata	= 460000
 channel3_compare_higdata	= 1200000
+key_cnt                         = 5
+key0_vol                        = 115
+key0_val                        = 115
+key1_vol                        = 240
+key1_val                        = 114
+key2_vol                        = 500
+key2_val                        = 139
+key3_vol                        = 700
+key3_val                        = 28
+key4_vol                        = 890
+key4_val                        = 102
+
+;----------------------------------------------------------------------------------
+;resistance tp configuration
+;----------------------------------------------------------------------------------
+[rtp_para]
+rtp_used      = 0
+rtp_screen_size = 5
+rtp_regidity_level = 5
+rtp_press_threshold_enable = 0
+rtp_press_threshold = 0x1f40
+rtp_sensitive_level = 0xf
+rtp_exchange_x_y_flag = 0
 
 ;----------------------------------------------------------------------------------
 ;capacitor tp configuration
@@ -306,26 +381,14 @@ ctp_exchange_x_y_flag = 1
 
 ctp_int_port        = port:PA03<6><default><default><default>
 ctp_wakeup          = port:PA02<1><default><default><1>
-
 ;----------------------------------------------------------------------------------
-; ft6x tp configuration
-;wakeup output function
-;ctp-ini-gpio: irq gpio of tp
-;ctp-rst-gpio: reset gpio of tp
+;touch key configuration
 ;----------------------------------------------------------------------------------
-[ft6x_ts]
-ft6x_ts_used = 0
-compatible        = "focaltech,focaltech_ts"
-i2c_id            = 0
-ctp_screen_max_x    = 1080
-ctp_screen_max_y    = 1290
-ctp_exchange_x_y_flag = 0
-ctp_revert_x_flag   = 0
-ctp_revert_y_flag   = 0
-ctp-int-gpio      = port:PB00<1><default><default><default>
-ctp-rst-gpio      = port:PB01<1><default><default><1>
-
-
+[tkey_para]
+tkey_used           = 0
+tkey_twi_id         =
+tkey_twi_addr       =
+tkey_int            =
 
 ;----------------------------------------------------------------------------------
 ;motor configuration
@@ -333,6 +396,40 @@ ctp-rst-gpio      = port:PB01<1><default><default><1>
 [motor_para]
 motor_used          = 0
 motor_shake         = port:power3<1><default><default><1>
+
+[nand0_para]
+nand_support_2ch    = 0
+
+nand0_used          = 0
+nand0_we            = port:PC00<2><0><1><default>
+nand0_ale           = port:PC01<2><0><1><default>
+nand0_cle           = port:PC02<2><0><1><default>
+nand0_ce0           = port:PC03<2><1><1><default>
+nand0_nre           = port:PC04<2><0><1><default>
+nand0_rb0           = port:PC05<2><1><1><default>
+nand0_d0            = port:PC06<2><0><1><default>
+nand0_d1            = port:PC07<2><0><1><default>
+nand0_d2            = port:PC08<2><0><1><default>
+nand0_d3            = port:PC09<2><0><1><default>
+nand0_d4            = port:PC10<2><0><1><default>
+nand0_d5            = port:PC11<2><0><1><default>
+nand0_d6            = port:PC12<2><0><1><default>
+nand0_d7            = port:PC13<2><0><1><default>
+nand0_ndqs          = port:PC14<2><0><1><default>
+nand0_ce1           = port:PC15<2><1><1><default>
+nand0_rb1           = port:PC16<2><1><1><default>
+
+nand0_regulator1 		= "vcc-nand"
+nand0_regulator2 		= "none"
+nand0_cache_level = 0x55aaaa55
+nand0_flush_cache_num = 0x55aaaa55
+nand0_capacity_level = 0x55aaaa55
+nand0_id_number_ctl = 0x55aaaa55
+nand0_print_level = 0x55aaaa55
+nand0_p0 = 0x55aaaa55
+nand0_p1 = 0x55aaaa55
+nand0_p2 = 0x55aaaa55
+nand0_p3 = 0x55aaaa55
 
 
 [disp]
@@ -345,13 +442,9 @@ screen0_output_mode      = 4
 screen1_output_type      = 1
 screen1_output_mode      = 4
 
-disp_rotation_used       = 1
-degree0 				 = 1
-degree0_0                = 0
-
 fb0_format               = 0
-fb0_width                = 320
-fb0_height               = 240
+fb0_width                = 240
+fb0_height               = 320
 
 fb1_format               = 0
 fb1_width                = 0
@@ -370,34 +463,25 @@ lcd1_contrast            = 50
 lcd1_saturation          = 57
 lcd1_hue                 = 50
 
-;----------------------------------------------------------------------------------
-;tv configuration
-;dac_src            (dac no,support dac_src0~dac_src3,dac num max is 4)
-;interface          (interface type,1<->cvbs,2<->YPBPR,4<->SVIDEO)
-;dac_type           (0<->composite,1<->luma,2<->chroma,3<->reserved,4<->y/green,
-;                    5<->u/pb/blue,6<->v/pr/red)
-;NOTE:              tv0,tv1 can not use the same dac_src.
-;----------------------------------------------------------------------------------
+[boot_disp]
+output_disp=0
+output_type=1
+output_mode=4
 
-[tv0]
-used            = 1
-
-dac_src0        = 0
-dac_type0       = 0
-
-interface       = 1
 ;----------------------------------------------------------------------------------
 ;hdmi configuration
 ;hdmi_used:             if hdmi is used
 ;hdmi_hdcp_enable:      if hdmi hdcp function enable
 ;hdmi_cts_compatibility:if hdmi cts test compatibility enable
 ;hdmi_power:            power name for hdmi
+;hdmi_cec_support:      enable cec funciton. (1:enable, 0:disable)
 ;hdmi_io_regulator:     controller's power
 ;----------------------------------------------------------------------------------
 [hdmi]
 hdmi_used              = 1
 hdmi_hdcp_enable       = 0
 hdmi_cts_compatibility = 0
+hdmi_cec_support       = 0
 hdmi_power             = "vcc18-hdmi"
 hdmi_io_regulator      = "vdd09-hdmi"
 hdmi_io_regulator_val  = 1000
@@ -410,8 +494,6 @@ hdmi_io_2              = port:PH13<2><0><default><default>
 hdmi_io_0              = port:PH11<7><0><default><default>
 hdmi_io_1              = port:PH12<7><0><default><default>
 hdmi_io_2              = port:PH13<7><0><default><default>
-
-
 ;----------------------------------------------------------------------------------
 ;lcd0 configuration
 
@@ -445,59 +527,60 @@ hdmi_io_2              = port:PH13<7><0><default><default>
 ;smart_color           90:normal lcd screen 65:retina lcd screen(9.7inch)
 ;----------------------------------------------------------------------------------
 [lcd0]
-lcd_used            = 1
+lcd_used             = 1
 
-lcd_driver_name     = "ili9341"
-lcd_x               = 240
-lcd_y               = 320
-lcd_width           = 108
-lcd_height          = 64
-lcd_dclk_freq       = 60
+lcd_driver_name      = "ili9341"
+lcd_x                = 240
+lcd_y                = 320
+lcd_width            = 108
+lcd_height           = 64
+lcd_dclk_freq        = 60
 
-lcd_pwm_used        = 0
-lcd_pwm_ch          = 0
-lcd_pwm_freq        = 50000
-lcd_pwm_pol         = 1
-lcd_pwm_max_limit   = 255
+lcd_pwm_used         = 0
+lcd_pwm_ch           = 0
+lcd_pwm_freq         = 50000
+lcd_pwm_pol          = 1
+lcd_pwm_max_limit    = 255
 
-lcd_hbp             = 20
+lcd_hbp              = 20
 ;10 + 20 + 10 + 240*3 = 760  real set 1000
-lcd_ht              = 1000
-lcd_hspw            = 10
-lcd_vbp             = 5
-lcd_vt              = 340
-lcd_vspw            = 2
+lcd_ht               = 1000
+lcd_hspw             = 10
+lcd_vbp              = 5
+lcd_vt               = 340
+lcd_vspw             = 2
 
-lcd_frm             = 2
-lcd_if              = 0
-lcd_hv_if			= 8  
-lcd_hv_clk_phase    = 0
-lcd_hv_sync_polarity   = 0
-lcd_hv_srgb_seq		= 0
+lcd_frm              = 0
+lcd_if               = 0
+lcd_hv_if            = 8
+lcd_hv_clk_phase     = 0
+lcd_hv_sync_polarity = 0
+lcd_hv_srgb_seq      = 0
 
-lcd_io_phase        = 0x0000
-lcd_gamma_en        = 0
-lcd_bright_curve_en = 1
-lcd_cmap_en         = 0
+lcd_io_phase         = 0x0000
+lcd_gamma_en         = 0
+lcd_bright_curve_en  = 1
+lcd_cmap_en          = 0
 
 
-lcd_rb_swap			= 0 
+lcd_rb_swap          = 0
 
-deu_mode            = 0
-lcdgamma4iep        = 22
-smart_color         = 90
+deu_mode             = 0
+lcdgamma4iep         = 22
+smart_color          = 90
 
-lcd_bl_en           = port:PB03<1><0><default><1>
-lcd_power           = "axp233_dc1sw"
+lcd_bl_en            = port:PB03<1><0><default><1>
+lcd_power            = "vcc-lcd"
+lcd_power1           = "vcc33-lcd"
 
 ;reset 
-lcd_gpio_0          = port:PB02<1><0><default><1>
+lcd_gpio_0           = port:PB02<1><0><default><1>
 ;cs
-lcd_gpio_1          = port:PD22<1><0><default><0>
+lcd_gpio_1           = port:PD22<1><0><default><0>
 ;sda 
-lcd_gpio_2          = port:PH08<1><0><default><0>
+lcd_gpio_2           = port:PH08<1><0><default><0>
 ;sck 
-lcd_gpio_3          = port:PH07<1><0><default><0> 
+lcd_gpio_3           = port:PH07<1><0><default><0>
 
 
 lcdd3                = port:PD01<2><0><2><default>
@@ -508,12 +591,42 @@ lcdd7                = port:PD05<2><0><2><default>
 lcdd10               = port:PD06<2><0><2><default>
 lcdd11               = port:PD07<2><0><2><default>
 lcdd12               = port:PD08<2><0><2><default>
+lcdclk               = port:PD18<2><0><3><default>
+lcdde                = port:PD19<2><0><3><default>
+lcdhsync             = port:PD20<2><0><3><default>
+lcdvsync             = port:PD21<2><0><3><default>
 
-lcdclk              = port:PD18<2><0><3><default>
-lcdde               = port:PD19<2><0><3><default>
-lcdhsync            = port:PD20<2><0><3><default>
-lcdvsync            = port:PD21<2><0><3><default>
+[lcd0_suspend]
 
+lcdd3                = port:PD01<7><0><2><default>
+lcdd4                = port:PD02<7><0><2><default>
+lcdd5                = port:PD03<7><0><2><default>
+lcdd6                = port:PD04<7><0><2><default>
+lcdd7                = port:PD05<7><0><2><default>
+lcdd10               = port:PD06<7><0><2><default>
+lcdd11               = port:PD07<7><0><2><default>
+lcdd12               = port:PD08<7><0><2><default>
+lcdclk               = port:PD18<7><0><3><default>
+lcdde                = port:PD19<7><0><3><default>
+lcdhsync             = port:PD20<7><0><3><default>
+lcdvsync             = port:PD21<7><0><3><default>
+
+;----------------------------------------------------------------------------------
+;tv configuration
+;dac_src            (dac no,support dac_src0~dac_src3,dac num max is 4)
+;interface          (interface type,1<->cvbs,2<->YPBPR,4<->SVIDEO)
+;dac_type           (0<->composite,1<->luma,2<->chroma,3<->reserved,4<->y/green,
+;                    5<->u/pb/blue,6<->v/pr/red)
+;NOTE:              tv0,tv1 can not use the same dac_src.
+;----------------------------------------------------------------------------------
+
+[tv0]
+used            = 1
+
+dac_src0        = 0
+dac_type0       = 0
+
+interface       = 1
 ;----------------------------------------------------------------------------------
 ;pwm config
 ;----------------------------------------------------------------------------------
@@ -532,7 +645,7 @@ pwm_positive        = port:PG07<2><0><default><default>
 pwm_positive        = port:PG07<7><0><default><default>
 
 [pwm8]
-pwm_used            = 0
+pwm_used            = 1
 pwm_positive        = port:PD22<2><0><default><default>
 
 [pwm8_suspend]
@@ -598,8 +711,7 @@ pwm_positive        = port:PL10<7><0><default><default>
 ;vinc(x)_sensor_list: use sensor list
 ;--------------------------------------------------------------------------------
 [vind0]
-vind0_used		= 1
-vind0_clk		= 336000000
+vind0_used		= 0
 
 [vind0/csi_cci0]
 csi_cci0_used           = 0
@@ -674,26 +786,26 @@ actuator0_afvdd         = "afvcc-csi"
 actuator0_afvdd_vol     = 2800000
 
 [vind0/sensor0]
-sensor0_used          = 1
+sensor0_used          = 0
 sensor0_mname         = "imx317_mipi"
-sensor0_twi_cci_id    = 3
+sensor0_twi_cci_id    = 2
 sensor0_twi_addr      = 0x34
-sensor0_mclk_id       = 3
+sensor0_mclk_id       = 2
 sensor0_pos           = "front"
-sensor0_isp_used      = 1
+sensor0_isp_used      = 0
 sensor0_fmt           = 1
 sensor0_stby_mode     = 0
-sensor0_vflip         = 1
-sensor0_hflip         = 1
-sensor0_iovdd         = "iovdd-csi"
-sensor0_iovdd_vol     = 1800000
-sensor0_avdd          = "avdd-csi"
+sensor0_vflip         = 0
+sensor0_hflip         = 0
+sensor0_iovdd         = ""
+sensor0_iovdd_vol     = 2800000
+sensor0_avdd          = ""
 sensor0_avdd_vol      = 2800000
-sensor0_dvdd          = "dvdd-csi"
-sensor0_dvdd_vol      = 1200000
+sensor0_dvdd          = ""
+sensor0_dvdd_vol      = 1800000
 sensor0_power_en      =
-sensor0_reset         = port:PI13<1><0><1><0>
-sensor0_pwdn          = port:PI15<1><0><1><0>
+sensor0_reset         = port:PI12<1><0><1><0>
+sensor0_pwdn          = port:PI14<1><0><1><0>
 
 [vind0/sensor1]
 sensor1_used          = 0
@@ -702,59 +814,55 @@ sensor1_twi_cci_id    = 3
 sensor1_twi_addr      = 0x34
 sensor1_mclk_id       = 3
 sensor1_pos           = "rear"
-sensor1_isp_used      = 1
+sensor1_isp_used      = 0
 sensor1_fmt           = 1
 sensor1_stby_mode     = 0
-sensor1_vflip         = 1
-sensor1_hflip         = 1
-sensor1_iovdd         = "iovdd-csi"
-sensor1_iovdd_vol     = 1800000
-sensor1_avdd          = "avdd-csi"
+sensor1_vflip         = 0
+sensor1_hflip         = 0
+sensor1_iovdd         = ""
+sensor1_iovdd_vol     = 2800000
+sensor1_avdd          = ""
 sensor1_avdd_vol      = 2800000
-sensor1_dvdd          = "dvdd-csi"
-sensor1_dvdd_vol      = 1200000
+sensor1_dvdd          = ""
+sensor1_dvdd_vol      = 1800000
 sensor1_power_en      =
 sensor1_reset         = port:PI13<1><0><1><0>
 sensor1_pwdn          = port:PI15<1><0><1><0>
 
 [vind0/vinc0]
-vinc0_used		= 1
-vinc0_csi_sel		= 1
-vinc0_mipi_sel		= 1
+vinc0_used		= 0
+vinc0_csi_sel		= 0
+vinc0_mipi_sel		= 0
 vinc0_isp_sel		= 0
-vinc0_isp_tx_ch		= 0
 vinc0_rear_sensor_sel	= 0
 vinc0_front_sensor_sel	= 0
 vinc0_sensor_list	= 0
 
 [vind0/vinc1]
-vinc1_used		= 1
-vinc1_csi_sel		= 1
-vinc1_mipi_sel		= 1
+vinc1_used		= 0
+vinc1_csi_sel		= 0
+vinc1_mipi_sel		= 0
 vinc1_isp_sel		= 0
-vinc1_isp_tx_ch		= 0
 vinc1_rear_sensor_sel	= 0
 vinc1_front_sensor_sel	= 0
 vinc1_sensor_list	= 0
 
 [vind0/vinc2]
 vinc2_used		= 0
-vinc2_csi_sel		= 0
-vinc2_mipi_sel		= 0
-vinc2_isp_sel		= 0
-vinc2_isp_tx_ch		= 0
-vinc2_rear_sensor_sel	= 0
-vinc2_front_sensor_sel	= 0
+vinc2_csi_sel		= 1
+vinc2_mipi_sel		= 1
+vinc2_isp_sel		= 1
+vinc2_rear_sensor_sel	= 1
+vinc2_front_sensor_sel	= 1
 vinc2_sensor_list	= 0
 
 [vind0/vinc3]
 vinc3_used		= 0
 vinc3_csi_sel		= 1
 vinc3_mipi_sel		= 1
-vinc3_isp_sel		= 0
-vinc3_isp_tx_ch		= 0
-vinc3_rear_sensor_sel	= 0
-vinc3_front_sensor_sel	= 0
+vinc3_isp_sel		= 1
+vinc3_rear_sensor_sel	= 1
+vinc3_front_sensor_sel	= 1
 vinc3_sensor_list	= 0
 
 [vind0/vinc4]
@@ -762,9 +870,8 @@ vinc4_used		= 0
 vinc4_csi_sel		= 2
 vinc4_mipi_sel		= 0xff
 vinc4_isp_sel		= 1
-vinc4_isp_tx_ch		= 0
 vinc4_rear_sensor_sel	= 0
-vinc4_front_sensor_sel	= 0
+vinc4_front_sensor_sel	= 1
 vinc4_sensor_list	= 0
 
 [vind0/vinc5]
@@ -772,9 +879,8 @@ vinc5_used		= 0
 vinc5_csi_sel		= 2
 vinc5_mipi_sel		= 0xff
 vinc5_isp_sel		= 1
-vinc5_isp_tx_ch		= 0
 vinc5_rear_sensor_sel	= 0
-vinc5_front_sensor_sel	= 0
+vinc5_front_sensor_sel	= 1
 vinc5_sensor_list	= 0
 
 [vind0/vinc6]
@@ -782,9 +888,8 @@ vinc6_used		= 0
 vinc6_csi_sel		= 2
 vinc6_mipi_sel		= 0xff
 vinc6_isp_sel		= 1
-vinc6_isp_tx_ch		= 0
 vinc6_rear_sensor_sel	= 0
-vinc6_front_sensor_sel	= 0
+vinc6_front_sensor_sel	= 1
 vinc6_sensor_list	= 0
 
 [vind0/vinc7]
@@ -792,9 +897,8 @@ vinc7_used		= 0
 vinc7_csi_sel		= 2
 vinc7_mipi_sel		= 0xff
 vinc7_isp_sel		= 1
-vinc7_isp_tx_ch		= 0
 vinc7_rear_sensor_sel	= 0
-vinc7_front_sensor_sel	= 0
+vinc7_front_sensor_sel	= 1
 vinc7_sensor_list	= 0
 
 ;--------------------------------------------------------------------------------
@@ -832,7 +936,7 @@ tvin_channel_num    =
 ;                                 						|
 ;--------------------------------------------------------------------------------
 [sdc0]
-sdc0_used          = 1
+sdc0_used          = 0
 bus-width		      = 4
 sdc0_d1            = port:PF00<2><1><3><default>
 sdc0_d0            = port:PF01<2><1><3><default>
@@ -853,7 +957,7 @@ vdmmc="vcc-sdcvd"
 
 
 [sdc1]
-sdc1_used          = 1
+sdc1_used          = 0
 bus-width	= 4
 sdc1_clk           = port:PG00<2><1><3><default>
 sdc1_cmd           = port:PG01<2><1><3><default>
@@ -889,7 +993,7 @@ sdc2_ds          = port:PC01<3><1><3><default>
 cd-gpios	   =
 sunxi-power-save-mode =
 sunxi-dis-signal-vol-sw =
-;mmc-ddr-1_8v	   =
+mmc-ddr-1_8v	   =
 ;mmc-hs200-1_8v	   =
 ;mmc-hs400-1_8v	   =
 ;max-frequency	   = 150000000
@@ -939,7 +1043,7 @@ smc_sda             =
 ;---       USB0控制标志
 ;--------------------------------
 [usbc0]
-usbc0_used          = 1
+usb_used            = 0
 usb_port_type       = 2
 usb_detect_type     = 1
 usb_id_gpio         = port:PB4<0><1><default><default>
@@ -952,7 +1056,7 @@ usb_wakeup_suspend = 0
 ;---       USB1控制标志
 ;--------------------------------
 [usbc1]
-usbc1_used          = 1
+usb_used            = 0
 usb_drv_vbus_gpio   = port:PB5<0><1><default><default>
 usb_host_init_state = 1
 usb_wakeup_suspend = 0
@@ -998,24 +1102,20 @@ gsensor_int2        =
 [gps_para]
 
 ;--------------------------------------------------------------------------------
-;wlan configuration
-;wlan_used:         0-not use, 1- use
-;wlan_busnum:       sdio/usb index
-;clocks:            external low power clock input (32.768KHz)
-;wlan_power:        input supply voltage
-;wlan_io_regulator: wlan/sdio I/O voltage
-;wlan_regon:        power up/down internal regulators used by wifi section
-;wlan_hostwake:     wlan to wake-up host
+;wifi configuration
+;wifi_sdc_id    ---  0- SDC0, 1- SDC1, 2- SDC2, 3- SDC3
+;wifi_usbc_id  ---  0- USB0, 1- USB1, 2- USB2
+;wifi_mod_sel   ---  0- none, 1- bcm40181, 2- bcm40183(wifi+bt),
+;                    3 - rtl8723as(wifi+bt), 4- rtl8189es(SM89E00),
+;                    5 - rtl8192cu, 6 - rtl8188eu
 ;--------------------------------------------------------------------------------
-[wlan]
-wlan_used           = 1
-wlan_busnum         = 1
-;wlan_usbnum         = 3
-wlan_power          = "vcc33-wifi"
-wlan_io_regulator   = "vcc18-wifi"
-;wlan_en             = port:PL08<1><default><default><0>
-wlan_regon          = port:PL04<1><default><default><0>
-wlan_hostwake       = port:PB00<6><default><default><0>
+[wifi_para]
+wifi_used          = 0
+wifi_sdc_id        = 1
+wifi_usbc_id       = 1
+wifi_usbc_type     = 1
+wifi_mod_sel       = 3
+wifi_power         = "axp22_aldo1"
 
 ; 1 - bcm40181 sdio wifi gpio config
 ;bcm40181_vdd_en        = port:PG18<1><default><default><0>
@@ -1051,110 +1151,274 @@ wlan_hostwake       = port:PB00<6><default><default><0>
 ; 6 - rtl8188eu usb wifi gpio conifg
 ;rtl8188eu_power    = port:PH27<1><0><default><0>
 
+;--------------------------------------------------------------------------------
+;bluetooth configuration
+;bt_used:           0- no used, 1- used
+;clocks:            external low power clock input (32.768KHz)
+;bt_power:          input supply voltage
+;bt_io_regulator:   bluetooth I/O voltage
+;bt_rst_n:          power up/down internal regulators used by BT section
+;--------------------------------------------------------------------------------
+[bt]
+bt_used             = 0
+;clocks             = "&clk_losc_out"
+bt_power            = "vcc18-wifi"
+bt_io_regulator     = "vcc-pg"
+bt_rst_n            = port:PL12<1><default><default><0>
 
 ;--------------------------------------------------------------------------------
-;allwinner,pcm_lrck_period 	:16/32/64/128/256
-;allwinner,pcm_lrckr_period :no use
-;allwinner,slot_width_select 	:16bits/20bits/24bits/32bits
-;allwinner,pcm_lsb_first 	:0: msb first; 1: lsb first
-;allwinner,tx_data_mode 	:0: 16bit linear PCM; 1: 8bit linear PCM; 2: 8bit u-law; 3: 8bit a-law
-;allwinner,rx_data_mode 	:0: 16bit linear PCM; 1: 8bit linear PCM; 2: 8bit u-law; 3: 8bit a-law
-;allwinner,daudio_master :1: SND_SOC_DAIFMT_CBM_CFM(codec clk & FRM master)        use
-;						  2: SND_SOC_DAIFMT_CBS_CFM(codec clk slave & FRM master)  not use
-;						  3: SND_SOC_DAIFMT_CBM_CFS(codec clk master & frame slave) not use
-;						  4: SND_SOC_DAIFMT_CBS_CFS(codec clk & FRM slave)         use
-;allwinner,audio_format: 1:SND_SOC_DAIFMT_I2S(standard i2s format).            use
+;bluetooth lpm configuration
+;btlpm_used:        0- no used, 1- used
+;uart_index:        0- uart0, 1- uart1, 2- uart2
+;bt_wake:           host wake-up bluetooth device
+;bt_hostwake:       bt device wake-up host
+;--------------------------------------------------------------------------------
+[btlpm]
+btlpm_used          = 0
+uart_index          = 1
+bt_wake             = port:PL11<1><default><default><1>
+bt_hostwake         = port:PL06<6><default><default><0>
+
+;--------------------------------------------------------------------------------
+;3G configuration
+;--------------------------------------------------------------------------------
+[3g_para]
+3g_used   			= 0
+3g_usbc_num			= 2
+3g_uart_num			= 0
+bb_vbat				= port:PL03<1><default><default><0>
+bb_host_wake        = port:PM00<1><default><default><0>
+bb_on				= port:PM01<1><default><default><0>
+bb_pwr_on			= port:PM03<1><default><default><0>
+bb_wake				= port:PM04<1><default><default><0>
+bb_rf_dis			= port:PM05<1><default><default><0>
+bb_rst				= port:PM06<1><default><default><0>
+3g_int              =
+
+;--------------------------------------------------------------------------------
+;gyroscope
+;--------------------------------------------------------------------------------
+[gy_para]
+gy_used             = 0
+gy_twi_id           = 2
+gy_twi_addr         = 0x6a
+gy_int1             = port:PA10<6><1><default><default>
+gy_int2             =
+
+;--------------------------------------------------------------------------------
+;light sensor
+;--------------------------------------------------------------------------------
+[ls_para]
+ls_used             = 0
+ls_twi_id           = 2
+ls_twi_addr         = 0x23
+ls_int              = port:PA12<6><1><default><default>
+
+;--------------------------------------------------------------------------------
+;compass
+;--------------------------------------------------------------------------------
+[compass_para]
+compass_used        = 0
+compass_twi_id      = 2
+compass_twi_addr    = 0x0d
+compass_int         = port:PA11<6><1><default><default>
+
+;--------------------------------------------------------------------------------
+;i2s_master:1: SND_SOC_DAIFMT_CBM_CFM(codec clk & FRM master)        use
+;			2: SND_SOC_DAIFMT_CBS_CFM(codec clk slave & FRM master)  not use
+;			3: SND_SOC_DAIFMT_CBM_CFS(codec clk master & frame slave) not use
+;			4: SND_SOC_DAIFMT_CBS_CFS(codec clk & FRM slave)         use
+;i2s_select:0 is pcm.1 is i2s
+;audio_format: 1:SND_SOC_DAIFMT_I2S(standard i2s format).            use
 ;			   2:SND_SOC_DAIFMT_RIGHT_J(right justfied format).
 ;			   3:SND_SOC_DAIFMT_LEFT_J(left justfied format)
 ;			   4:SND_SOC_DAIFMT_DSP_A(pcm. MSB is available on 2nd BCLK rising edge after LRC rising edge). use
 ;			   5:SND_SOC_DAIFMT_DSP_B(pcm. MSB is available on 1nd BCLK rising edge after LRC rising edge)
-;allwinner,signal_inversion:1:SND_SOC_DAIFMT_NB_NF(normal bit clock + frame)  use
+;signal_inversion:1:SND_SOC_DAIFMT_NB_NF(normal bit clock + frame)  use
 ;				  2:SND_SOC_DAIFMT_NB_IF(normal BCLK + inv FRM)
 ;				  3:SND_SOC_DAIFMT_IB_NF(invert BCLK + nor FRM)  use
 ;				  4:SND_SOC_DAIFMT_IB_IF(invert BCLK + FRM)
-;allwinner,frametype :0: short frame = 1 clock width;  1: long frame = 2 clock width
-;allwinner,tdm_config :0:pcm 1:i2s
-;allwinner,daudio0_used :0:not use 1:use
-;-------------------------------------------------------------------------------
-;		NOTE :Make sure daudio0mach_used = 0x1,daudio0_used = 0x1,
-;         if register the sound card DAUDIO0.
-;--------------------------------------------------------------------------------
-[snddaudio0]
-snddaudio0_used = 1
+;over_sample_rate: support 128fs/192fs/256fs/384fs/512fs/768fs
+;sample_resolution	:16bits/20bits/24bits
+;word_select_size 	:16bits/20bits/24bits/32bits
+;pcm_sync_period 	:16/32/64/128/256
+;msb_lsb_first 		:0: msb first; 1: lsb first
+;sign_extend 		:0: zero pending; 1: sign extend
+;slot_index 		:slot index: 0: the 1st slot - 3: the 4th slot
+;slot_width 		:8 bit width / 16 bit width
+;frame_width 		:0: long frame = 2 clock width;  1: short frame
+;tx_data_mode 		:0: 16bit linear PCM; 1: 8bit linear PCM; 2: 8bit u-law; 3: 8bit a-law
+;rx_data_mode 		:0: 16bit linear PCM; 1: 8bit linear PCM; 2: 8bit u-law; 3: 8bit a-law
+;--------------------------------------------------------------------------------        
+[daudio]
+daudio_used         = 0
+daudio_master		= 4
+daudio_select  		= 1
+audio_format		= 1
+signal_inversion	= 1
+mclk_fs				= 512
+sample_resolution   = 16
+slot_width_select 	= 16
+;pcm_sync_period 	= 256
+pcm_lrck_period		= 32
+pcm_lrckr_period 	= 1
+msb_lsb_first 	    = 0
+sign_extend 		= 0
+slot_index 		    = 0
+slot_width 		    = 32
+frame_width 		= 0
+tx_data_mode 		= 0
+rx_data_mode 		= 0
+i2s_mclk            =
+i2s_bclk            = port:PB01<2><1><default><default>
+i2s_lrclk           = port:PB02<2><1><default><default>
+i2s_dout0           = port:PB03<2><1><default><default>
+i2s_dout1           =
+i2s_dout2           =
+i2s_dout3           =
+i2s_din             = port:PB07<2><1><default><default>
 
-;-----------------------------------------------------------------------------
-[daudio0]
-daudio0_used = 0
-pcm_lrck_period =   0x20
-slot_width_select =   0x20
-daudio_master =   0x04
-audio_format =   0x01
-signal_inversion =   0x01
-frametype =   0x0
-tdm_config =  0x01
-tdm_num =   0x00
-mclk_div = 0x0
-i2s0_mclk =
-i2s0_lrclk =
-i2s0_bclk = 
-i2s0_dout0 =
-i2s0_din =
+[spdif0]
+spdif_used          = 0
+spdif_dout          = port:PH28<3><1><default><default>
+spdif_din           = port:PH27<3><1><default><default>
 
 ;--------------------------------------------------------------------------------
-;		NOTE :Make sure daudio1mach_used = 0x1,daudio1_used = 0x1,
-;         if register the sound card DAUDIO1.
+;i2s_master:1: SND_SOC_DAIFMT_CBM_CFM(codec clk & FRM master)        use
+;			2: SND_SOC_DAIFMT_CBS_CFM(codec clk slave & FRM master)  not use
+;			3: SND_SOC_DAIFMT_CBM_CFS(codec clk master & frame slave) not use
+;			4: SND_SOC_DAIFMT_CBS_CFS(codec clk & FRM slave)         use
+;i2s_select:0 is pcm.1 is i2s
+;audio_format: 1:SND_SOC_DAIFMT_I2S(standard i2s format).            use
+;			   2:SND_SOC_DAIFMT_RIGHT_J(right justfied format).
+;			   3:SND_SOC_DAIFMT_LEFT_J(left justfied format)
+;			   4:SND_SOC_DAIFMT_DSP_A(pcm. MSB is available on 2nd BCLK rising edge after LRC rising edge). use
+;			   5:SND_SOC_DAIFMT_DSP_B(pcm. MSB is available on 1nd BCLK rising edge after LRC rising edge)
+;signal_inversion:1:SND_SOC_DAIFMT_NB_NF(normal bit clock + frame)  use
+;				  2:SND_SOC_DAIFMT_NB_IF(normal BCLK + inv FRM)
+;				  3:SND_SOC_DAIFMT_IB_NF(invert BCLK + nor FRM)  use
+;				  4:SND_SOC_DAIFMT_IB_IF(invert BCLK + FRM)
+;over_sample_rate: support 128fs/192fs/256fs/384fs/512fs/768fs
+;sample_resolution	:16bits/20bits/24bits
+;word_select_size 	:16bits/20bits/24bits/32bits
+;pcm_sync_period 	:16/32/64/128/256
+;msb_lsb_first 		:0: msb first; 1: lsb first
+;sign_extend 		:0: zero pending; 1: sign extend
+;slot_index 		:slot index: 0: the 1st slot - 3: the 4th slot
+;slot_width 		:8 bit width / 16 bit width
+;frame_width 		:0: long frame = 2 clock width;  1: short frame
+;tx_data_mode 		:0: 16bit linear PCM; 1: 8bit linear PCM; 2: 8bit u-law; 3: 8bit a-law
+;rx_data_mode 		:0: 16bit linear PCM; 1: 8bit linear PCM; 2: 8bit u-law; 3: 8bit a-law
 ;--------------------------------------------------------------------------------
-[snddaudio2]
-snddaudio2_used = 1
+[i2s0]
+i2s0_used            = 0
+i2s0_channel         = 2
+i2s0_master                    = 4
+i2s0_select            = 1
+audio_format           = 1
+signal_inversion       = 1
+over_sample_rate       = 512
+sample_resolution   = 16
+word_select_size 	= 32
+pcm_sync_period 	= 256
+msb_lsb_first 	    = 0
+sign_extend 		= 0
+slot_index 		    = 0
+slot_width 		    = 16
+frame_width 		= 1
+tx_data_mode           = 1
+rx_data_mode           = 1
+i2s0_mclk            =
+i2s0_bclk            = port:PB04<2><1><default><default>
+i2s0_lrclk           = port:PB05<2><1><default><default>
+i2s0_dout0           = port:PB06<2><1><default><default>
+i2s0_dout1           =
+i2s0_dout2           =
+i2s0_dout3           =
+i2s0_din             = port:PB07<2><1><default><default>
 
-;-----------------------------------------------------------------------------
-[daudio2]
-daudio2_used = 0
-pcm_lrck_period =   0x20
-slot_width_select =   0x20
-daudio_master =   0x04
-audio_format =   0x01
-signal_inversion =   0x01
-frametype =   0x0
-tdm_config =  0x01
-tdm_num =   0x02
-mclk_div = 0x0
-
-;----------------------------------------------------------------------------------------------------------
-;--------------------------------------------------------------------------------------
-;allwinner,headphonevol :headphone volume:0x0--0x3f 0db--(-62db) 1db/step
-;allwinner,spkervol : speaker volume:0x0--0x1f 0db-(-43.5db) 1.5db/step
-;allwinner,earpiecevol : earpiece volume:0x0--0x1f 0db-(-43.5db) 1.5db/step
-;allwinner,maingain :	mainmic gain:0x0---0x7 0x0-0db 0x1:24db   3db/step
-;allwinner,headsetmicgain : headphonemic gain:0x0---0x7 0x0-0db 0x1:24db   3db/step
-;allwinner,adcagc_cfg : 1:use adcagc 0:no use
-;allwinner,adcdrc_cfg : 1:use adcdrc 0:no use
-;allwinner,adchpf_cfg : 1:use adchpf 0:no use
-;allwinner,dacdrc_cfg : 1:use adcdrc 0:no use
-;allwinner,dachpf_cfg : 1:use adchpf 0:no use
-;allwinner,aif2config : 1:use aif2 0:no use
-;allwinner,aif3config :	1:use aif3 0:no use
 ;--------------------------------------------------------------------------------
-;		NOTE :Make sure audiocodec_machine_used = 0x1,sun50i2s_used = 0x1
-;         sun50codec_used = 0x1,if register the sound card audiocodec.
-;---------------------------------------------------------------------------------
-[sndcodec]
-sndcodec_used = 0x1
-aif2fmt = 0x3
-aif3fmt = 0x3
-aif2master = 0x1
-;------------------------------------------------------------------------------
-[codec]
-codec_used = 0x1
-headphonevol =0x3b
-spkervol =   0x1b
-maingain =   0x4
-adcagc_cfg =   0x0
-adcdrc_cfg =   0x0
-adchpf_cfg =   0x0
-dacdrc_cfg =   0x0
-dachpf_cfg =   0x0
-gpio-spk = port:PB08<1><1><1><1>
+;pcm_master:1: SND_SOC_DAIFMT_CBM_CFM(codec clk & FRM master)        use
+;			2: SND_SOC_DAIFMT_CBS_CFM(codec clk slave & FRM master)  not use
+;			3: SND_SOC_DAIFMT_CBM_CFS(codec clk master & frame slave) not use
+;			4: SND_SOC_DAIFMT_CBS_CFS(codec clk & FRM slave)         use
+;pcm_select:1 is pcm.0 is i2s
+;audio_format: 1:SND_SOC_DAIFMT_I2S(standard i2s format).            use
+;			   2:SND_SOC_DAIFMT_RIGHT_J(right justfied format).
+;			   3:SND_SOC_DAIFMT_LEFT_J(left justfied format)
+;			   4:SND_SOC_DAIFMT_DSP_A(pcm. MSB is available on 2nd BCLK rising edge after LRC rising edge). use
+;			   5:SND_SOC_DAIFMT_DSP_B(pcm. MSB is available on 1nd BCLK rising edge after LRC rising edge)
+;signal_inversion:1:SND_SOC_DAIFMT_NB_NF(normal bit clock + frame)  use
+;				  2:SND_SOC_DAIFMT_NB_IF(normal BCLK + inv FRM)
+;				  3:SND_SOC_DAIFMT_IB_NF(invert BCLK + nor FRM)  use
+;				  4:SND_SOC_DAIFMT_IB_IF(invert BCLK + FRM)
+;over_sample_rate: support 128fs/192fs/256fs/384fs/512fs/768fs
+;sample_resolution	:16bits/20bits/24bits
+;word_select_size 	:16bits/20bits/24bits/32bits
+;pcm_sync_period 	:16/32/64/128/256
+;msb_lsb_first 		:0: msb first; 1: lsb first
+;sign_extend 		:0: zero pending; 1: sign extend
+;slot_index 		:slot index: 0: the 1st slot - 3: the 4th slot
+;slot_width 		:8 bit width / 16 bit width
+;frame_width 		:0: long frame = 2 clock width;  1: short frame
+;tx_data_mode 		:0: 16bit linear PCM; 1: 8bit linear PCM; 2: 8bit u-law; 3: 8bit a-law
+;rx_data_mode 		:0: 16bit linear PCM; 1: 8bit linear PCM; 2: 8bit u-law; 3: 8bit a-law
+;--------------------------------------------------------------------------------
+[i2s1]
+i2s1_used            = 0
+i2s1_channel         = 2
+i2s1_master                    = 4
+i2s1_select            = 1
+audio_format           = 1
+signal_inversion       = 1
+over_sample_rate	= 512
+sample_resolution   = 16
+word_select_size 	= 32
+pcm_sync_period 	= 64
+msb_lsb_first 	    = 0
+sign_extend 		= 0
+slot_index 		    = 0
+slot_width 		    = 16
+frame_width 		= 1
+tx_data_mode 		= 0
+rx_data_mode 		= 0
+i2s1_mclk            =
+i2s1_bclk            = port:PG11<2><1><default><default>
+i2s1_lrclk           = port:PG10<2><1><default><default>
+i2s1_dout            = port:PG12<2><1><default><default>
+i2s1_din             = port:PG13<2><1><default><default>
+
+;pa_single_vol,pa_double_vol: 31 level,1.5db/step.0x1f is the large volume.
+;cap_val:use for system record,0x0--0db,0x1--24db,0x2--27db,0x3--30db,0x4--33db,0x5--36db,0x6--39db,0x7--42db
+;headphone_vol,earpiece_vol: must least than 0x3b. 0x1 is a step.
+;headset_mic_vol: headset mic(mic2) vol,use for phone headset mic call
+;main_mic_vol: main mic(mic1) vol,use for phone main mic call
+[audio0]
+audio_used          	= 0
+headphone_vol			= 0x3b
+earpiece_vol = 0x3b
+cap_vol					= 0x5
+pa_single_vol			= 0x19
+pa_double_used			= 0
+pa_double_vol			= 0x1f
+headphone_direct_used	= 0
+headset_mic_vol = 0x6
+main_mic_vol        = 0x6
+audio_hp_ldo       =none
+audio_pa_ctrl          = port:PH09<1><default><default><0>
+;audio_pa_ctrl         = port:PA18<1><default><default><0>
+aif2_used              = 0
+aif3_used              = 0
+headphone_mute_used = 0
+
+;----------------------------------------------------------------------------------
+;ir --- infra remote configuration
+;ir_protocols --- 0x01:NEC protocols 0x02:RC5 protocols 0x03: NEC and RC5 protocols
+;----------------------------------------------------------------------------------
+[s_cir0]
+s_cir0_used		= 1
+ir_power_key_code	= 0x0
+ir_protocol_used	= 0x00
 
 ;--------------------------------------------------------------------------------------------------------
 ;compatible                  ---pmu0 name, support:axp233
@@ -1175,7 +1439,7 @@ pmu_vbusen_func            = 0
 pmu_reset                  = 0
 pmu_irq_wakeup             = 1
 pmu_hot_shutdown           = 1
-pmu_inshort                = 1
+pmu_inshort                = 0
 
 ;--------------------------------------------------------------------------------------------------------
 ;pmu_bat_unused              ---when pmu support battery charge, but app scheme is no battery solution, set to 1
@@ -1257,8 +1521,8 @@ pmu_inshort                = 1
 compatible                 = "axp233-charger"
 pmu_bat_unused             = 0
 pmu_chg_ic_temp            = 0
-pmu_battery_rdc            = 240
-pmu_battery_cap            = 992
+pmu_battery_rdc            = 100
+pmu_battery_cap            = 0
 pmu_runtime_chgcur         = 450
 pmu_suspend_chgcur         = 1500
 pmu_shutdown_chgcur        = 1500
@@ -1266,16 +1530,15 @@ pmu_init_chgvol            = 4200
 pmu_ac_vol                 = 4000
 pmu_ac_cur                 = 0
 pmu_usbpc_vol              = 4400
-pmu_usbpc_cur              = 0
+pmu_usbpc_cur              = 500
 pmu_battery_warning_level1 = 15
 pmu_battery_warning_level2 = 0
 pmu_chgled_func            = 1
 pmu_chgled_type            = 0
-power_start                = 1
+power_start                = 0
 pmu_ocv_en                 = 1
 pmu_cou_en                 = 1
 pmu_update_min_time        = 30
-pmu_safe_vol               = 3570
 
 pmu_bat_para1              = 0
 pmu_bat_para2              = 0
@@ -1285,29 +1548,29 @@ pmu_bat_para5              = 0
 pmu_bat_para6              = 0
 pmu_bat_para7              = 0
 pmu_bat_para8              = 0
-pmu_bat_para9              = 1
-pmu_bat_para10             = 2
-pmu_bat_para11             = 3 
-pmu_bat_para12             = 5
-pmu_bat_para13             = 8
-pmu_bat_para14             = 14
-pmu_bat_para15             = 25
-pmu_bat_para16             = 38
-pmu_bat_para17             = 44
-pmu_bat_para18             = 49
-pmu_bat_para19             = 53
-pmu_bat_para20             = 57
-pmu_bat_para21             = 61
-pmu_bat_para22             = 64
-pmu_bat_para23             = 69
-pmu_bat_para24             = 75
-pmu_bat_para25             = 79
-pmu_bat_para26             = 83
-pmu_bat_para27             = 87
+pmu_bat_para9              = 5
+pmu_bat_para10             = 8
+pmu_bat_para11             = 9
+pmu_bat_para12             = 10
+pmu_bat_para13             = 13
+pmu_bat_para14             = 16
+pmu_bat_para15             = 20
+pmu_bat_para16             = 33
+pmu_bat_para17             = 41
+pmu_bat_para18             = 46
+pmu_bat_para19             = 50
+pmu_bat_para20             = 53
+pmu_bat_para21             = 57
+pmu_bat_para22             = 61
+pmu_bat_para23             = 67
+pmu_bat_para24             = 73
+pmu_bat_para25             = 78
+pmu_bat_para26             = 84
+pmu_bat_para27             = 88
 pmu_bat_para28             = 92
 pmu_bat_para29             = 93
-pmu_bat_para30             = 96
-pmu_bat_para31             = 98
+pmu_bat_para30             = 94
+pmu_bat_para31             = 95
 pmu_bat_para32             = 100
 
 pmu_bat_temp_enable        = 0
@@ -1356,22 +1619,22 @@ pmu_powkey_on_time         = 1000
 [regulator0]
 compatible      = "axp233-regulator"
 regulator_count = 19
-regulator1      = "axp233_dcdc1 none vcc-3v3 vcc-io vcc33-usb vcc33-pc vcc-pd vcc-pa vcc-card vcc-nand vcc-ephy audio-33"
-regulator2      = "axp233_dcdc2 none vdd-cpua"
+regulator1      = "axp233_dcdc1 none vcc-3v3 vcc-io vcc33-usb vcc33-pc vcc-pa vcc-card vcc-nor vcc-ephy vdd-oled vcc-gyro swin audio-33"
+regulator2      = "axp233_dcdc2 none vdd-cpua vdd-test"
 regulator3      = "axp233_dcdc3 none vdd-sys vdd09-usb"
-regulator4      = "axp233_dcdc4 none vcc18-pc vcc-lvds vcc18-lcd vcc18-dsi vcc18-hdmi vcc18-cmbcsi0 vcc18-cmbcsi1 vcc-efuse"
+regulator4      = "axp233_dcdc4 none vcc-lvds vcc18-dsi vcc18-hdmi vcc18-cmbcsi0 vcc18-cmbcsi1 vcc-efuse"
 regulator5      = "axp233_dcdc5 none vcc-dram"
 regulator6      = "axp233_rtc none vcc-rtc"
 regulator7      = "axp233_aldo1 none avdd-csi"
 regulator8      = "axp233_aldo2 none dvdd-csi"
-regulator9      = "axp233_aldo3 none vdd18-lpddr vdd18-dram vcc-pll avcc"
+regulator9      = "axp233_aldo3 none vdd18-dram vcc-pll avcc"
 regulator10     = "axp233_dldo1 none"
 regulator11     = "axp233_dldo2 none vdd09-hdmi"
 regulator12     = "axp233_eldo1 none vcc-pg vcc18-wifi vcc-dcxo-io"
 regulator13     = "axp233_eldo2 none vcc-pf"
 regulator14     = "axp233_eldo3 none vcc-pl"
 regulator15     = "axp233_ldoio0 none vcc-tv"
-regulator16     = "axp233_ldoio1 none vcc-pi iovdd-csi iovcc-csi"
+regulator16     = "axp233_ldoio1 none iovdd-csi vcc-pi"
 regulator17     = "axp233_swout none vcc33-wifi"
 regulator18     = "axp233_dc1sw none vcc-lcd vcc-ctp"
 regulator19     = "axp233_dc5ldo none vdd-cpus"
@@ -1382,6 +1645,96 @@ regulator19     = "axp233_dc5ldo none vdd-cpus"
 [axp_gpio0]
 compatible = "axp233-gpio"
 
+;----------------------------------------------------------------------------------
+; dvfs voltage-frequency table configuration
+;
+; there are two clusters, cluster0 and cluster1, they have diffrent configuration
+; on frequency and voltage.
+;
+; max_freq: cpu maximum frequency, based on Hz
+; min_freq: cpu minimum frequency, based on Hz
+;
+; LV_count: count of LV_freq/LV_volt, must be < 16
+;
+; L_LV1: core vdd is 1.30v if cpu frequency is (1056Mhz,  1104Mhz]
+; L_LV2: core vdd is 1.26v if cpu frequency is ( 864Mhz,  1056Mhz]
+; L_LV3: core vdd is 1.20v if cpu frequency is ( 720Mhz,   864Mhz]
+; L_LV4: core vdd is 1.10v if cpu frequency is ( 480Mhz,   720Mhz]
+; L_LV5: core vdd is 1.00v if cpu frequency is (   0Mhz,   480Mhz]
+; L_LV6: core vdd is 1.00v if cpu frequency is (   0Mhz,   480Mhz]
+; L_LV7: core vdd is 1.00v if cpu frequency is (   0Mhz,   480Mhz]
+; L_LV8: core vdd is 1.00v if cpu frequency is (   0Mhz,   480Mhz]
+;
+; B_LV1: core vdd is 1.30v if cpu frequency is (1056Mhz,  1104Mhz]
+; B_LV2: core vdd is 1.26v if cpu frequency is ( 864Mhz,  1056Mhz]
+; B_LV3: core vdd is 1.20v if cpu frequency is ( 720Mhz,   864Mhz]
+; B_LV4: core vdd is 1.10v if cpu frequency is ( 480Mhz,   720Mhz]
+; B_LV5: core vdd is 1.00v if cpu frequency is (   0Mhz,   480Mhz]
+; B_LV6: core vdd is 1.00v if cpu frequency is (   0Mhz,   480Mhz]
+; B_LV7: core vdd is 1.00v if cpu frequency is (   0Mhz,   480Mhz]
+; B_LV8: core vdd is 1.00v if cpu frequency is (   0Mhz,   480Mhz]
+;
+;----------------------------------------------------------------------------------
+[dvfs_table]
+;little
+L_max_freq = 1008000000
+L_min_freq = 120000000
+
+L_LV_count = 8
+
+L_LV1_freq = 1104000000
+L_LV1_volt = 1300
+
+L_LV2_freq = 1056000000
+L_LV2_volt = 1260
+
+L_LV3_freq = 864000000
+L_LV3_volt = 1200
+
+L_LV4_freq = 720000000
+L_LV4_volt = 1100
+
+L_LV5_freq = 480000000
+L_LV5_volt = 1000
+
+L_LV6_freq = 0
+L_LV6_volt = 1000
+
+L_LV7_freq = 0
+L_LV7_volt = 1000
+
+L_LV8_freq = 0
+L_LV8_volt = 1000
+
+;big
+B_max_freq = 1008000000
+B_min_freq = 120000000
+
+B_LV_count = 8
+
+B_LV1_freq = 1104000000
+B_LV1_volt = 1300
+
+B_LV2_freq = 1056000000
+B_LV2_volt = 1260
+
+B_LV3_freq = 864000000
+B_LV3_volt = 1200
+
+B_LV4_freq = 720000000
+B_LV4_volt = 1100
+
+B_LV5_freq = 480000000
+B_LV5_volt = 1000
+
+B_LV6_freq = 0
+B_LV6_volt = 1000
+
+B_LV7_freq = 0
+B_LV7_volt = 1000
+
+B_LV8_freq = 0
+B_LV8_volt = 1000
 
 ;----------------------------------------------------------------------------------
 ;s_uart0 config parameters
@@ -1424,58 +1777,3 @@ s_jtag_tdi         = port:PL07<2><1><2><default>
 Vdevice_used        = 0
 Vdevice_0           = port:PB01<4><1><2><default>
 Vdevice_1           = port:PB02<4><1><2><default>
-
-[gpioled]
-compatible = "gpio-leds"
-
-[gpioled/work]
-label = "rec_led"
-gpios = port:PB07<1><default><default><0>
-linux,default-trigger = "heartbeat"
-default-state = "on"
-
-[gpioled/wifi]
-label = "wifi_led"
-gpios = port:PB06<1><default><default><1>
-linux,default-trigger = "oneshot"
-default-state = "on"
-
-;-------------------------------------------------------------------------------
-;userspace gpio interface
-;----------------------------------------------------------------------------------
-[gpio_para]
-compatible              = "allwinner,sunxi-init-gpio"
-gpio_para_used          = 0
-gpio_num                = 1
-gpio_pin_1              =  port:PB01<1><3><3><1>
-
-;---------------------------------------------
-;
-; normal config: eg. px_bias = "pmu_name:supply_name:voltage"
-;
-;                    pmu_name = axp809, axp806
-;                    supply_name = dcdc1, dcdc2, aldo1, gpio1ldo, etc...
-;
-; special config: eg. px_bias = "floating"
-;                    when the gpio is float, use it
-;                    and the register will ignore it(use default value)
-;
-; special config: eg. px_bias = "constant:voltage"
-;                    when the gpio connect a constant voltage, use it
-;                    and the register will set a matching value
-;
-;useage: pa_bias = "axp809:dcdc1:3300" meant seting pa group bias is 3.3V
-;     pa_bias = "axp809:dcdc1:1003300" meant seting pa group bias is 3.3V, and set
-;                                               axp809 dcdc1 output voltage is 3.3v
-;---------------------------------------------
-[gpio_bias]
-pa_bias         = "axp809:dcdc1:3300"
-pd_bias         = "axp809:bldo1:3300"
-pe_bias         = "axp809:dldo1:2800"
-pf_bias         = "axp809:eldo2:3300"
-pg_bias         = "axp809:eldo1:3300"
-pi_bias         = "axp809:dldo1:2800"
-pj_bias         = "axp809:dcdce:2800"
-;pl_bias         = "axp809:dcdce:2800"
-vcc_bias         = "axp809:dcdc1:3300"
-;r_vcc_bias         = "axp809:dcdc1:3300"

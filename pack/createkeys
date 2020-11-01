@@ -10,8 +10,9 @@
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
 
-ROOT_DIR=$PWD
+ROOT_DIR=$(cd $(dirname $0) && pwd)
 TOOLS_DIR=${ROOT_DIR}/pctools/linux
+SELECT_CHIP=
 
 export PATH=${TOOLS_DIR}/openssl:$PATH
 
@@ -27,21 +28,73 @@ function pack_warn()
 
 function pack_info()
 {
-    echo -e "\033[47;30mINFO: $*\033[0m"
+    echo -e "\033[0;31;1mINFO: $*\033[0m"
 }
 
 show_help()
 {
-	printf "\nbuild.sh - parser firmware and fetch one file\n"
-	echo " this script is used to create all keys defined in the dragon_toc.cfg"
-	printf "\n"
+	echo "build.sh - this script is used to create all keys defined in the dragon_toc.cfg"
+	echo "OPTIONS"
+	echo "-h                  Display help message"
+	echo "-c [chip_type]      Chip type, e.g. sun50iw6p1,sun50iw3p1..."
+}
+
+build_select_chip()
+{
+	local count=0
+	local defidx=0
+	local defval=""
+	[ -f $ROOT_DIR/../../.buildconfig ] && \
+	defval=$(grep LICHEE_CHIP $ROOT_DIR/../../.buildconfig | awk -F '=' '{print $2}')
+	printf "All valid Sunxi chip:\n"
+	for chip in $( find $ROOT_DIR/chips/ -mindepth 1 -maxdepth 1 -type d |sort); do
+		chips[$count]=`basename $chip`
+		printf "$count. ${chips[$count]}\n"
+		[ "x$defval" == "x${chips[$count]}" ] && defidx=$count
+		let count=$count+1
+	done
+
+	while true; do
+		read -p "Please select a chip[${chips[$defidx]}]: "
+		[ -z "$REPLY" ] && REPLY=$defidx
+		RES=`expr match $REPLY "[0-9][0-9]*$"`
+		if [ "$RES" -le 0 ]; then
+			echo "please use index number"
+			continue
+		fi
+		if [ "$REPLY" -ge $count ]; then
+			echo "too big"
+			continue
+		fi
+		if [ "$REPLY" -lt "0" ]; then
+			echo "too small"
+			continue
+		fi
+		break
+	done
+
+	SELECT_CHIP=${chips[$REPLY]}
 }
 
 createkeys()
 {
 	printf "ready to create keys\n"
 
-	cp -v common/sign_config/dragon_toc.cfg dragon_toc.cfg
+	find $ROOT_DIR/chips/ -mindepth 1 -maxdepth 1 -type d | grep -w "$SELECT_CHIP"
+	if [ $? -ne 0 ]
+	then
+		pack_error "plat: $SELECT_CHIP is not exist"
+		exit 1
+	fi
+
+	pack_info "SELECT_CHIP is $SELECT_CHIP\n"
+
+	if [ -f $ROOT_DIR/chips/$SELECT_CHIP/configs/default/dragon_toc.cfg ]
+	then
+		cp -v $ROOT_DIR/chips/$SELECT_CHIP/configs/default/dragon_toc.cfg $ROOT_DIR/dragon_toc.cfg
+	else
+		cp -v $ROOT_DIR/common/sign_config/dragon_toc.cfg $ROOT_DIR/dragon_toc.cfg
+	fi
 
 	if [ $? -ne 0 ]
 	then
@@ -49,25 +102,42 @@ createkeys()
 		exit 1
 	fi
 
-	dragonsecboot -key dragon_toc.cfg common/keys
+	dragonsecboot -key $ROOT_DIR/dragon_toc.cfg $ROOT_DIR/common/keys
 	if [ $? -ne 0 ]
 	then
 		pack_error "dragon toc run error"
-		rm -rf dragon_toc.cfg
+		rm -rf $ROOT_DIR/dragon_toc.cfg
 
 		exit 1
 	fi
 
-	rm -rf dragon_toc.cfg
+	printf "\n"
+	if [ -f $ROOT_DIR/chips/$SELECT_CHIP/configs/default/dragon_toc.cfg ]
+	then
+		pack_info "use platform[$SELECT_CHIP] toc config to creat keys"
+	else
+		pack_info "use default toc config to creat keys"
+	fi
+	printf "\n"
+
+	rm -rf $ROOT_DIR/dragon_toc.cfg
 }
 
-while getopts f:o:m:s: OPTION
+while getopts hc: OPTION
 do
 	case $OPTION in
+	h) show_help
+	exit 0
+	;;
+	c) SELECT_CHIP=$OPTARG
+	createkeys
+	exit 0
+	;;
 	*) show_help
 	exit 0
 	;;
 esac
 done
 
+build_select_chip
 createkeys

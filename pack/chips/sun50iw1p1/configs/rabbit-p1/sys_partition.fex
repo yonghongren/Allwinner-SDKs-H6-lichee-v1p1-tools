@@ -21,9 +21,9 @@ size = 16384
 ;    name        = USERFS2      ; //分区名称
 ;    size        = 16384        ; //分区大小 单位: 扇区.分区表示个数最多2^31 * 512 = 2T
 ;    downloadfile = "123.fex"   ; //下载文件的路径和名称，可以使用相对路径，相对是指相对于image.cfg文件所在分区。也可以使用绝对路径
-;    keydata     = 0x8000            ; //私有数据分区，重新量产数据将不丢失
+;    keydata     = 1            ; //私有数据分区，重新量产数据将不丢失
 ;    encrypt     = 1            ; //采用加密方式烧录，将提供数据加密，但损失烧录速度
-;    user_type   = ?	        ; //私有用法,必须按照分区说明进行更改
+;         = ?            ; //私有用法
 ;    verify      = 1            ; //要求量产完成后校验是否正确
 ;
 ; 注：1、name唯一, 不允许同名
@@ -33,103 +33,88 @@ size = 16384
 ;********************************************************************************************************
 [partition_start]
 
-;------------------------------> mmcblk0p2/nanda
+;------------------------------>mmcblk0p2/nanda
 [partition]
     name         = bootloader
-    size	     = 32768
+    size         = 65536
     downloadfile = "bootloader.fex"
     user_type    = 0x8000
 
-;------------------------------> mmcblk0p5/nandb
+;------------------------------>mmcblk0p5/nandb
 [partition]
     name         = env
     size         = 32768
     downloadfile = "env.fex"
     user_type    = 0x8000
 
-;------------------------------> mmcblk0p6/nandc
+;------------------------------>mmcblk0p6/nandc
 [partition]
     name         = boot
     size         = 32768
     downloadfile = "boot.fex"
     user_type    = 0x8000
 
-;------------------------------> mmcblk0p7/nandd
+;------------------------------>mmcblk0p7/nandd
 [partition]
     name         = system
     size         = 3145728
     downloadfile = "system.fex"
     user_type    = 0x8000
 
-;------------------------------>nandk, system image verity hash tree block 
-[partition]
-    name         = verity_block 
-    downloadfile = "verity_block.fex"
-    size         = 32768
-    user_type    = 0x8000
-
-;------------------------------> mmcblk0p8/nande
+;------------------------------>mmcblk0p8/nande
+;[partition]
+;    name         = data
+;    size         = 2097152
+;    user_type    = 0x8000
+;
+;------------------------------>mmcblk0p9/nandf
 [partition]
     name         = misc
     size         = 32768
     user_type    = 0x8000
 
-;------------------------------> mmcblk0p9/nandf
+;------------------------------>mmcblk0p10/nandg
 [partition]
     name         = recovery
     size         = 65536
     downloadfile = "recovery.fex"
     user_type    = 0x8000
 
-;------------------------------> mmcblk0p10/nandg
+;------------------------------>mmcblk0p11/nandh
 [partition]
-    name         = sysrecovery
-    size         = 3145728
-    downloadfile = "sysrecovery.fex"
+    name         = cache
+    size         = 1572864
     user_type    = 0x8000
-    verify       = 0
 
-;------------------------------> mmcblk0p11/nandh
+;------------------------------nandi, store encryptable
+[partition]
+       name            = metadata
+       size            = 32768
+       user_type       = 0x8000
+;------------------------------>nandj, data image private
 [partition]
     name         = private
     size         = 32768
-    keydata      = 0x8000
+    ro           = 0
     user_type    = 0x8000
 
-;------------------------------> mmcblk0p12/nandi, save android log
+;------------------------------>nandk, save kernel panic log
+[partition]
+    name         = klog
+    size         = 32768
+    user_type    = 0x8000
+
+;------------------------------>nandl, save android log
 [partition]
     name         = alog
     size         = 131072
     ro           = 0
     user_type    = 0x8000
 
-;------------------------------> mmcblk0p13/nandj
-[partition]
-    name         = Reserve0
-    size         = 32768
-    user_type    = 0x8000
-
-;------------------------------> mmcblk0p14/nandk
-[partition]
-    name         = Reserve1
-    size         = 65536
-    user_type    = 0xc100
-
-;------------------------------> mmcblk0p15/nandl
-[partition]
-    name         = Reserve2
-    size         = 32768
-    user_type    = 0xc100
-
-;------------------------------> mmcblk0p16/nandm
-[partition]
-    name         = cache
-    size         = 1572864
-    user_type    = 0xc100
-
-;------------------------------> mmcblk0p1/nandn, UDISK
+;------------------------------>nandm, UDISK
 [partition]
     name         = UDISK
     downloadfile = "diskfs.fex"
-    user_type    = 0xc200
-    verify       = 0
+    ;verify       = 0
+    user_type    = 0x8100
+

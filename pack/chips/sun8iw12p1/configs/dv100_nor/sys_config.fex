@@ -101,9 +101,9 @@ twi_scl         = port:PH0<2><default><default><default>
 twi_sda         = port:PH1<2><default><default><default>
 
 [uart_para]
-uart_debug_port = 3
-uart_debug_tx   = port:PH05<2><1><1><default>
-uart_debug_rx   = port:PH06<2><1><1><default>
+uart_debug_port = 0
+uart_debug_tx   = port:PB09<2><1><default><default>
+uart_debug_rx   = port:PB10<2><1><default><default>
 
 [jtag_para]
 jtag_enable     = 1
@@ -298,6 +298,17 @@ channel3			= 0
 channel3_compare		= 0
 channel3_compare_lowdata	= 460000
 channel3_compare_higdata	= 1200000
+key_cnt                         = 5
+key0_vol                        = 115
+key0_val                        = 115
+key1_vol                        = 240
+key1_val                        = 114
+key2_vol                        = 500
+key2_val                        = 139
+key3_vol                        = 700
+key3_val                        = 28
+key4_vol                        = 890
+key4_val                        = 102
 
 ;----------------------------------------------------------------------------------
 ;resistance tp configuration
@@ -1688,34 +1699,3 @@ s_jtag_tdi         = port:PL07<2><1><2><default>
 Vdevice_used        = 0
 Vdevice_0           = port:PB01<4><1><2><default>
 Vdevice_1           = port:PB02<4><1><2><default>
-
-;---------------------------------------------
-;
-; normal config: eg. px_bias = "pmu_name:supply_name:voltage"
-;
-;                    pmu_name = axp809, axp806
-;                    supply_name = dcdc1, dcdc2, aldo1, gpio1ldo, etc...
-;
-; special config: eg. px_bias = "floating"
-;                    when the gpio is float, use it
-;                    and the register will ignore it(use default value)
-;
-; special config: eg. px_bias = "constant:voltage"
-;                    when the gpio connect a constant voltage, use it
-;                    and the register will set a matching value
-;
-;useage: pa_bias = "axp809:dcdc1:3300" meant seting pa group bias is 3.3V
-;     pa_bias = "axp809:dcdc1:1003300" meant seting pa group bias is 3.3V, and set
-;                                               axp809 dcdc1 output voltage is 3.3v
-;---------------------------------------------
-[gpio_bias]
-pa_bias         = "axp809:dcdc1:3300"
-pd_bias         = "axp809:bldo1:3300"
-;pe_bias         = "axp809:dldo1:2800"
-pf_bias         = "axp809:eldo2:3300"
-pg_bias         = "axp809:eldo1:3300"
-pi_bias         = "axp809:dldo1:1800"
-;pj_bias         = "axp809:dcdce:2800"
-;pl_bias         = "axp809:dcdce:2800"
-vcc_bias         = "axp809:dcdc1:3300"
-;r_vcc_bias         = "axp809:dcdc1:3300"

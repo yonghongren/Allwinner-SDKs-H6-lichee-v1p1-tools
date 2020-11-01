@@ -11,7 +11,7 @@
 
 # Notice:
 #   1. This script muse source at the top directory of lichee.
-BUILD_CONFIG=.buildconfig
+
 cpu_cores=`cat /proc/cpuinfo | grep "processor" | wc -l`
 if [ ${cpu_cores} -le 8 ] ; then
 	LICHEE_JLEVEL=${cpu_cores}
@@ -38,17 +38,19 @@ function mk_info()
 
 # define importance variable
 LICHEE_TOP_DIR=`pwd`
-LICHEE_BR_DIR=${LICHEE_TOP_DIR}/buildroot
 LICHEE_KERN_DIR=${LICHEE_TOP_DIR}/${LICHEE_KERN_VER}
 LICHEE_ARCH_DIR=${LICHEE_KERN_DIR}/${LICHEE_ARCH}
 LICHEE_TOOLS_DIR=${LICHEE_TOP_DIR}/tools
 LICHEE_SATA_DIR=${LICHEE_TOP_DIR}/SATA
 LICHEE_OUT_DIR=${LICHEE_TOP_DIR}/out
 MKRULE_FILE=${LICHEE_TOOLS_DIR}/build/mkrule
-MKBUSINESS_FILE=${LICHEE_TOOLS_DIR}/build/mkbusiness
+BUILD_CONFIG=${LICHEE_TOP_DIR}/.buildconfig
 
-if [ "x$(echo $PATH | grep ${LICHEE_TOOLS_DIR}/build/bin)x" == "xx" ]; then
-        export PATH=$PATH:${LICHEE_TOOLS_DIR}/build/bin
+# add support for buildroot-201611 support
+if [ -n "`echo $LICHEE_KERN_VER | grep "linux-4.4"`" ]; then
+	LICHEE_BR_DIR=${LICHEE_TOP_DIR}/buildroot-201611
+else
+	LICHEE_BR_DIR=${LICHEE_TOP_DIR}/buildroot
 fi
 
 
@@ -75,6 +77,29 @@ platforms=(
 "camdroid"
 )
 
+function save_config()
+{
+	local cfgkey=$1
+	local cfgval=$2
+	local cfgfile=$3
+
+	if [ -f $cfgfile ] && [ -n "$(grep "^[	 ]*export[	 ]\+$cfgkey[	 ]*=" $cfgfile)" ]; then
+		sed -i "s/\(^[	 ]*export[	 ]\+$cfgkey[	 ]*=\).*/\1$cfgval/g" $cfgfile
+	else
+		echo "export $cfgkey=$cfgval" >> $cfgfile
+	fi
+}
+
+function load_config()
+{
+	local cfgkey=$1
+	local cfgfile=$2
+
+	if [ -f $cfgfile ]; then
+		echo $(grep "^[	 ]*export[	 ]\+$cfgkey[	 ]*=" $cfgfile | tail -n 1 | grep -oP "(?<==).*" | awk '{sub("^[	 ]*","");print}')
+	fi
+}
+
 #
 # This function can get the realpath between $SRC and $DST
 #
@@ -96,22 +121,13 @@ function get_realpath()
 
 function check_env()
 {
-	if [ "x${LICHEE_PLATFORM}" = "xandroid" ] ; then
-		if [ -z "${LICHEE_CHIP}" -o \
-			-z "${LICHEE_PLATFORM}" -o \
-			-z "${LICHEE_KERN_VER}" ] ; then
-			mk_error "run './build.sh config' setup env"
-			exit 1
-		fi
-	else
-		if [ -z "${LICHEE_CHIP}" -o \
-			-z "${LICHEE_PLATFORM}" -o \
-			-z "${LICHEE_KERN_VER}" -o \
-			-z "${LICHEE_ARCH}" -o \
-			-z "${LICHEE_BOARD}" ] ; then
-			mk_error "run './build.sh config' setup env"
-			exit 1
-		fi
+	if [ -z "${LICHEE_CHIP}" -o \
+		-z "${LICHEE_PLATFORM}" -o \
+		-z "${LICHEE_KERN_VER}" -o \
+		-z "${LICHEE_ARCH}" -o \
+		-z "${LICHEE_BOARD}" ] ; then
+		mk_error "run './build.sh config' setup env"
+		exit 1
 	fi
 
 	cd ${LICHEE_TOOLS_DIR}
@@ -119,609 +135,246 @@ function check_env()
 	cd - > /dev/null
 }
 
+function fetch_defconf()
+{
+	local pattern=$1
+	local out_dir=$2
+	local defconf=`awk '$1=="'$pattern'" {print $2,$3}' ${MKRULE_FILE}`
+	if [ -n "${defconf}" ]; then
+		export LICHEE_BR_DEFCONF=`echo ${defconf} | awk '{print $1}'`
+		export LICHEE_KERN_DEFCONF=`echo ${defconf} | awk '{print $2}'`
+
+		# mark as diff for output dir & buildroot output dir
+		export LICHEE_PLAT_OUT="${LICHEE_OUT_DIR}/${LICHEE_CHIP}/${LICHEE_PLATFORM}/${out_dir}"
+		export LICHEE_BR_OUT="${LICHEE_PLAT_OUT}/buildroot"
+		mkdir -p ${LICHEE_BR_OUT}
+
+		return 0
+	fi
+	return 1
+}
+
+function init_disclaimer()
+{
+	local aw_disclaimer_dir="${LICHEE_TOP_DIR}/tools/disclaimer"
+	local aw_disclaimer_bash="${aw_disclaimer_dir}/disclaimer.sh"
+
+	if [ -f ${aw_disclaimer_bash} ] ; then
+		chmod 0755 ${aw_disclaimer_bash}
+		${aw_disclaimer_bash} ${LICHEE_TOP_DIR}
+		if [ $? -ne 0 ];then
+			exit 1
+		fi
+	fi
+}
+
 function init_defconf()
 {
 	local pattern
-	local defconf
-	local out_dir="common"
 
 	check_env
 
+	if [ -n "$LICHEE_BUSSINESS" ]; then
+		pattern="${LICHEE_CHIP}_${LICHEE_BUSSINESS}_${LICHEE_PLATFORM}_${LICHEE_BOARD}"
+		fetch_defconf "${pattern}" "${LICHEE_BOARD}"
+		[ $? -eq 0 ] && return 0
+
+		pattern="${LICHEE_CHIP}_${LICHEE_BUSSINESS}_${LICHEE_PLATFORM}_${LICHEE_ARCH}"
+		fetch_defconf "${pattern}" "common"
+		[ $? -eq 0 ] && return 0
+
+		pattern="${LICHEE_CHIP}_${LICHEE_BUSSINESS}_${LICHEE_PLATFORM}"
+		fetch_defconf "${pattern}" "common"
+		[ $? -eq 0 ] && return 0
+	fi
+
 	pattern="${LICHEE_CHIP}_${LICHEE_PLATFORM}_${LICHEE_BOARD}"
-	defconf=`awk '$1=="'$pattern'" {print $2,$3}' ${MKRULE_FILE}`
-	if [ -n "${defconf}" ] ; then
-		out_dir="${LICHEE_BOARD}"
-	else
-		pattern="${LICHEE_CHIP}_${LICHEE_PLATFORM}_${LICHEE_BUSINESS}"
-		defconf=`awk '$1=="'$pattern'" {print $2,$3}' ${MKRULE_FILE}`
-		if [ -z "${defconf}" ] ; then
-			pattern="${LICHEE_CHIP}_${LICHEE_PLATFORM}_${LICHEE_ARCH}"
-			defconf=`awk '$1=="'$pattern'" {print $2,$3}' ${MKRULE_FILE}`
-			if [ -z "${defconf}" ] ; then
-				pattern="${LICHEE_CHIP}_${LICHEE_PLATFORM}"
-				defconf=`awk '$1=="'$pattern'" {print $2,$3}' ${MKRULE_FILE}`
-			fi
-		fi
-	fi
+	fetch_defconf "${pattern}" "${LICHEE_BOARD}"
+	[ $? -eq 0 ] && return 0
 
-	if [ -n "${defconf}" ] ; then
-		export LICHEE_BR_DEFCONF=`echo ${defconf} | awk '{print $1}'`
-		export LICHEE_KERN_DEFCONF=`echo ${defconf} | awk '{print $2}'`
-	fi
+	pattern="${LICHEE_CHIP}_${LICHEE_PLATFORM}_${LICHEE_ARCH}"
+	fetch_defconf "${pattern}" "common"
+	[ $? -eq 0 ] && return 0
 
-	export LICHEE_PLAT_OUT="${LICHEE_OUT_DIR}/${LICHEE_CHIP}/${LICHEE_PLATFORM}/${out_dir}"
-	export LICHEE_BR_OUT="${LICHEE_PLAT_OUT}/buildroot"
-	mkdir -p ${LICHEE_BR_OUT}
+	pattern="${LICHEE_CHIP}_${LICHEE_PLATFORM}"
+	fetch_defconf "${pattern}" "common"
+	[ $? -eq 0 ] && return 0
 
-	set_build_info
+	return 1
 }
 
-function set_build_info()
+function list_subdir()
 {
-	if [ -d ${LICHEE_PLAT_OUT} ] ; then
-		if [ -f ${LICHEE_PLAT_OUT}/.buildconfig ] ; then
-			rm -f ${LICHEE_PLAT_OUT}/.buildconfig
-		fi
-		echo "export LICHEE_CHIP='${LICHEE_CHIP}'" >> ${LICHEE_OUT_DIR}/${LICHEE_CHIP}/.buildconfig
-		echo "export LICHEE_PLATFORM='${LICHEE_PLATFORM}'" >> ${LICHEE_OUT_DIR}/${LICHEE_CHIP}/.buildconfig
-		echo "export LICHEE_BUSINESS='${LICHEE_BUSINESS}'" >> ${LICHEE_OUT_DIR}/${LICHEE_CHIP}/.buildconfig
-		echo "export LICHEE_ARCH=${LICHEE_ARCH}" >> ${LICHEE_OUT_DIR}/${LICHEE_CHIP}/.buildconfig
-		echo "export LICHEE_KERN_VER='${LICHEE_KERN_VER}'" >> ${LICHEE_OUT_DIR}/${LICHEE_CHIP}/.buildconfig
-		echo "export LICHEE_BOARD='${LICHEE_BOARD}'" >> ${LICHEE_OUT_DIR}/${LICHEE_CHIP}/.buildconfig
-	fi
+	echo "$(eval "$(echo "$(ls -d $1/*/)" | sed  "s/^/basename /g")")"
+}
 
-	if [ -f ${BUILD_CONFIG} ] ; then
-		rm ${BUILD_CONFIG}
+function init_key()
+{
+	local val_list=$1
+	local cfg_key=$2
+	local cfg_val=$3
+
+	if [ -n "$(echo $val_list | grep -w $cfg_val)" ]; then
+		export $cfg_key=$cfg_val
+		return 0
+	else
+		return 1
 	fi
-	echo "export LICHEE_CHIP=${LICHEE_CHIP}" >> ${BUILD_CONFIG}
-	echo "export LICHEE_PLATFORM=${LICHEE_PLATFORM}" >> ${BUILD_CONFIG}
-	echo "export LICHEE_BUSINESS=${LICHEE_BUSINESS}" >> ${BUILD_CONFIG}
-	echo "export LICHEE_ARCH=${LICHEE_ARCH}" >> ${BUILD_CONFIG}
-	echo "export LICHEE_KERN_VER=${LICHEE_KERN_VER}" >> ${BUILD_CONFIG}
-	echo "export LICHEE_BOARD=${LICHEE_BOARD}" >> ${BUILD_CONFIG}
 }
 
 function init_chips()
 {
-	local chip=$1
-	local cnt=0
-	local ret=1
-
-	for chipdir in ${LICHEE_TOOLS_DIR}/pack/chips/* ; do
-		chips[$cnt]=`basename $chipdir`
-		if [ "x${chips[$cnt]}" = "x${chip}" ] ; then
-			ret=0
-			export LICHEE_CHIP=${chip}
-		fi
-		((cnt+=1))
-	done
-
-	return ${ret}
+	local cfg_val=$1 # chip
+	local cfg_key="LICHEE_CHIP"
+	local val_list=$(list_subdir $LICHEE_TOOLS_DIR/pack/chips)
+	init_key "$val_list" "$cfg_key" "$cfg_val"
+	return $?
 }
 
 function init_platforms()
 {
-	local cnt=0
-	local ret=1
-	local platform=""
-
-	for platform in ${platforms[@]} ; do
-		if [ "x${platform}" = "x$1" ] ; then
-			ret=0
-			export LICHEE_PLATFORM=${platform}
-		fi
-		((cnt+=1))
-	done
-
-	return ${ret}
+	local cfg_val=$1 # platform
+	local cfg_key="LICHEE_PLATFORM"
+	local val_list=${platforms[@]}
+	init_key "$val_list" "$cfg_key" "$cfg_val"
+	return $?
 }
 
 function init_kern_ver()
 {
-	local kern_ver=$1
-	local cnt=0
-	local ret=1
-
-	if [ "x${LICHEE_CHIP}" = "xsun6i" -o "x${LICHEE_CHIP}" = "xsun8iw1p1" ] ; then
-		if [ "x${kern_ver}" != "xlinux-3.3" ] ; then
-			mk_error "${LICHEE_CHIP} must ust using linux-3.3!\n"
-			return ${ret};
-		fi
-	elif [ "x${LICHEE_CHIP}" = "xsun8iw6p1" \
-			-o "x${LICHEE_CHIP}" = "xsun8iw8p1" -o "x${LICHEE_CHIP}" = "xsun9iw1p1" ] ; then
-		if [ "x${kern_ver}" != "xlinux-3.4" ] ; then
-			mk_error "${LICHEE_CHIP} must using linux-3.4!\n"
-			return ${ret};
-		fi
-	elif [ "x${LICHEE_CHIP}" = "xsun8iw12p1" ] ; then
-		if [ "x${kern_ver}" != "xlinux-4.4" ] ; then
-			mk_error "${LICHEE_CHIP} must using linux-4.4!\n"
-			return ${ret};
-		fi
-	elif [ "x${LICHEE_CHIP}" = "xsun8iw7p1" ] ; then
-		if [ "x${kern_ver}" != "xlinux-4.4" ] ; then
-			if [ "x${kern_ver}" != "xlinux-3.4" ] ; then
-				mk_error "${LICHEE_CHIP} must using linux-4.4 of linux-3.4!\n"
-				return ${ret};
-			fi
-		fi
-	else
-		if [ "x${kern_ver}" != "xlinux-3.10" ] ; then
-			mk_error "${LICHEE_CHIP} must using linux-3.10!\n"
-			return ${ret};
-		fi
-	fi
-
-	for kern_dir in ${LICHEE_TOP_DIR}/linux-* ; do
-		kern_vers[$cnt]=`basename $kern_dir`
-		if [ "x${kern_vers[$cnt]}" = "x${kern_ver}" ] ; then
-			ret=0
-			export LICHEE_KERN_VER=${kern_ver}
-			export LICHEE_KERN_DIR=${LICHEE_TOP_DIR}/${LICHEE_KERN_VER}
-		fi
-		((cnt+=1))
-	done
-
-	return ${ret}
-}
-
-function init_business()
-{
-	local chip=$1
-	local business=$2
-	local ret=1
-
-	pattern=${chip}
-	defconf=`awk '$1=="'$pattern'" {for(i=2;i<=NF;i++) print($i)}'	${MKBUSINESS_FILE}`
-	if [ -n "${defconf}" ] ; then
-		printf "All available business:\n"
-		for subbusness in $defconf ; do
-			if [ "x${business}" = "x${subbusness}" ] ; then
-				ret=0
-				export LICHEE_BUSINESS=${subbusness}
-			fi
-		done
-	else
-		export LICHEE_BUSINESS=""
-		ret=0
-		printf "not set business, to use default!\n"
-	fi
-
-	return ${ret}
+	local cfg_val=$1 # kern_ver
+	local cfg_key="LICHEE_KERN_VER"
+	local val_list=$(list_subdir $LICHEE_TOP_DIR | grep "linux-")
+	init_key "$val_list" "$cfg_key" "$cfg_val"
+	return $?
 }
 
 function init_arch()
 {
-	local arch=$1
-	local cnt=0
-	local ret=1
-
-	if [ "x${arch}" = "x" ] ; then
-		echo "not set arch, to use default by kernel version"
-		if [ -n "`echo ${LICHEE_CHIP} || grep "sun5[0-9]i"`" ] && \
-			[ "x${LICHEE_KERN_VER}" = "xlinux-3.10" ]; then
-			export LICHEE_ARCH=arm64
-		else
-			export LICHEE_ARCH=arm
-		fi
-
-		ret=0;
-		return ${ret}
-	fi
-
-	for arch_dir in ${LICHEE_KERN_DIR}/arch/ar* ; do
-		archs[$cnt]=`basename $arch_dir`
-		if [ "x${archs[$cnt]}" = "x${arch}" ] ; then
-			ret=0
-			export LICHEE_ARCH=${arch}
-		fi
-		((cnt+=1))
-	done
-
-	return ${ret}
+	local cfg_val=$1 # arch
+	local cfg_key="LICHEE_ARCH"
+	local val_list=$(list_subdir $LICHEE_KERN_DIR/arch | grep "arm")
+	init_key "$val_list" "$cfg_key" "$cfg_val"
+	return $?
 }
 
 function init_boards()
 {
 	local chip=$1
-	local board=$2
-	local cnt=0
-	local ret=1
-
-	if [ "x${LICHEE_PLATFORM}" == "xandroid" ] ; then
-		export LICHEE_BOARD=""
-		ret=0;
-		return ${ret}
-	fi
-
-	for boarddir in ${LICHEE_TOOLS_DIR}/pack/chips/${chip}/configs/* ; do
-		boards[$cnt]=`basename $boarddir`
-		if [ "x${boards[$cnt]}" = "x${board}" ] ; then
-			ret=0
-			export LICHEE_BOARD=${board}
-		fi
-		((cnt+=1))
-	done
-
-	return ${ret}
+	local cfg_val=$2 # board
+	local cfg_key="LICHEE_BOARD"
+	local val_list=$(list_subdir $LICHEE_TOOLS_DIR/pack/chips/$chip/configs | grep -v default)
+	init_key "$val_list" "$cfg_key" "$cfg_val"
+	return $?
 }
 
-
-function select_lunch()
+function mk_select()
 {
-	local chip_cnt=0
-	local board_cnt=0
-	local plat_cnt=0
-	local platform=""
+	local val_list=$1
+	local cfg_key=$2
+	local cnt=0
+	local cfg_val=$(load_config $cfg_key $BUILD_CONFIG)
+	local cfg_idx=0
+	local banner=$(echo ${cfg_key:7} | tr '[:upper:]' '[:lower:]')
 
-	declare -a mulboards
-	declare -a mulchips
-	declare -a mulplatforms
+	printf "All available $banner:\n"
+	for val in $val_list; do
+		array[$cnt]=$val
+		if [ "X_$cfg_val" == "X_${array[$cnt]}" ]; then
+			cfg_idx=$cnt
+		fi
+		printf "%4d. %s\n" $cnt $val
+		let "cnt++"
+	done
+	while true; do
+		read -p "Choice [${array[$cfg_idx]}]: " choice
+		if [ -z "${choice}" ]; then
+			choice=$cfg_idx
+		fi
 
-	printf "All available lichee lunch:\n"
-	for chipdir in ${LICHEE_TOOLS_DIR}/pack/chips/* ; do
-		chips[$chip_cnt]=`basename $chipdir`
-		#printf "%4d. %s\n" ${chip_cnt} ${chips[$chip_cnt]}
-		for platform in ${platforms[@]} ; do
-			if [ "x${platform}" = "xandroid" ] ; then
-				pattern=${chips[$chip_cnt]}
-				defconf=`awk '$1=="'$pattern'" {for(i=2;i<=NF;i++) print($i)}' $MKBUSINESS_FILE`
-				if [ -n "${defconf}" ] ; then
-					for subbusness in $defconf ; do
-						mulchips[$board_cnt]=${chips[$chip_cnt]}
-						mulplatforms[$board_cnt]=${platform}
-						mulbusiness[$board_cnt]=${subbusness}
-						mulboards[$board_cnt]=""
-						printf "%4d. %s-%s-%s\n" $board_cnt ${chips[$chip_cnt]} ${platform} ${subbusness}
-						((board_cnt+=1))
-					done
-				else
-					mulchips[$board_cnt]=${chips[$chip_cnt]}
-					mulplatforms[$board_cnt]=${platform}
-					mulbusiness[$board_cnt]=""
-					mulboards[$board_cnt]=""
-					printf "%4d. %s-%s\n" $board_cnt ${chips[$chip_cnt]} ${platform}
-					((board_cnt+=1))
-				fi
+		if [ -z "${choice//[0-9]/}" ] ; then
+			if [ $choice -ge 0 -a $choice -lt $cnt ] ; then
+				cfg_val="${array[$choice]}"
+				break;
 			fi
-			((plat_cnt+=1))
-		done
-		((chip_cnt+=1))
+		fi
+		 printf "Invalid input ...\n"
 	done
-
-	while true ; do
-        read -p "Choice: " choice
-        if [ -z "${choice}" ] ; then
-            continue
-        fi
-
-        if [ -z "${choice//[0-9]/}" ] ; then
-            if [ $choice -ge 0 -a $choice -lt $board_cnt ] ; then
-		#printf "%4d  %s %s %s\n" $choice  ${mulchips[$choice]} ${mulplatforms[$choice]} ${mulboards[$choice]}
-		if [ -f .buildconfig ] ; then
-			rm -f .buildconfig
-		fi
-
-		#export PLATFORM=${mulchips[$choice]}
-		export LICHEE_CHIP="${mulchips[$choice]}"
-		echo "export LICHEE_CHIP=${mulchips[$choice]}" >> ${BUILD_CONFIG}
-
-		export LICHEE_PLATFORM="${mulplatforms[$choice]}"
-		echo "export LICHEE_PLATFORM=${mulplatforms[$choice]}" >> ${BUILD_CONFIG}
-
-		export LICHEE_BUSINESS="${mulbusiness[$choice]}"
-		echo "export LICHEE_BUSINESS=${mulbusiness[$choice]}" >> ${BUILD_CONFIG}
-
-		export LICHEE_BOARD="${mulboards[$choice]}"
-		echo "export LICHEE_BOARD=${mulboards[$choice]}" >> ${BUILD_CONFIG}
-
-		if [ "x${LICHEE_CHIP}" = "xsun8iw1p1" -o "x${LICHEE_CHIP}" = "xsun6i" ] ; then
-			LICHEE_KERN_VER="linux-3.3"
-		elif [ "x${LICHEE_CHIP}" = "xsun8iw6p1" -o "x${LICHEE_CHIP}" = "xsun8iw8p1" -o "x${LICHEE_CHIP}" = "xsun9iw1p1" ] ; then
-			LICHEE_KERN_VER="linux-3.4"
-		elif [ "x${LICHEE_CHIP}" = "xsun8iw12p1" ] ; then
-			LICHEE_KERN_VER="linux-4.4"
-		elif [ "x${LICHEE_CHIP}" = "xsun8iw7p1" ] ; then
-			select_kern_only
-		else
-			LICHEE_KERN_VER="linux-3.10"
-		fi
-
-		printf "using kernel '${LICHEE_KERN_VER}':\n"
-		export LICHEE_KERN_VER
-		export LICHEE_KERN_DIR=${LICHEE_TOP_DIR}/${LICHEE_KERN_VER}
-		echo "export LICHEE_KERN_VER=${LICHEE_KERN_VER}" >> ${BUILD_CONFIG}
-
-		if [ -n "`echo ${LICHEE_CHIP} | grep "sun5[0-9]i"`" ] && \
-			[ "x${LICHEE_KERN_VER}" = "xlinux-3.10" ]; then
-			LICHEE_ARCH="arm64"
-		else
-			LICHEE_ARCH="arm"
-		fi
-		printf "using arch '${LICHEE_ARCH}':\n"
-		export LICHEE_ARCH
-		echo "export LICHEE_ARCH=${LICHEE_ARCH}" >> ${BUILD_CONFIG}
-
-		echo "LICHEE_CHIP="${LICHEE_CHIP}
-		echo "LICHEE_PLATFORM="${LICHEE_PLATFORM}
-		echo "LICHEE_BUSINESS="${LICHEE_BUSINESS}
-		echo "LICHEE_BOARD="${LICHEE_BOARD}
-		echo "LICHEE_ARCH="${LICHEE_ARCH}
-		echo "LICHEE_KERN_VER="${LICHEE_KERN_VER}
-		break
-            fi
-        fi
-        printf "Invalid input ...\n"
-    done
+	export $cfg_key=$cfg_val
+	save_config "$cfg_key" "$cfg_val" $BUILD_CONFIG
 }
 
-function select_business()
+function list_subdir()
 {
-	local cnt=0
-	local pattern
-	local defconf
+	echo "$(eval "$(echo "$(ls -d $1/*/)" | sed  "s/^/basename /g")")"
+}
 
+function mk_config()
+{
 	select_platform
+	select_chip
+	select_kern_ver
+	select_arch
+	select_board
+	select_bussiness
+}
 
-	pattern=${LICHEE_CHIP}
-	defconf=`awk '$1=="'$pattern'" {for(i=2;i<=NF;i++) print($i)}' ${MKBUSINESS_FILE}`
-	if [ -n "${defconf}" ] ; then
-		printf "All available business:\n"
-		for subbusness in $defconf ; do
-			business[$cnt]=$subbusness
-			printf "%4d. %s\n" $cnt ${business[$cnt]}
-			((cnt+=1))
-		done
+function select_bussiness()
+{
+	local bussinessfile=$LICHEE_TOP_DIR/tools/build/bussiness
+	[ ! -f "$bussinessfile" ] && sed -i "/LICHEE_BUSSINESS/d" $BUILD_CONFIG && return
 
-		while true ; do
-			read -p "Choice: " choice
-			if [ -z "${choice}" ] ; then
-				continue
-			fi
+	local bussiness=$(grep $LICHEE_CHIP $bussinessfile | sed "s/$LICHEE_CHIP\s\+//g")
+	[ -z "$bussiness" ] && sed -i "/LICHEE_BUSSINESS/d" $BUILD_CONFIG && return
 
-			if [ -z "${choice//[0-9]/}" ] ; then
-				if [ $choice -ge 0 -a $choice -lt $cnt ] ; then
-					export LICHEE_BUSINESS="${business[$choice]}"
-					echo "export LICHEE_BUSINESS=${business[$choice]}" >> ${BUILD_CONFIG}
-					break;
-				fi
-			fi
-			 printf "Invalid input ...\n"
-		done
-	else
-		export LICHEE_BUSINESS=""
-		echo "export LICHEE_BUSINESS=${LICHEE_BUSINESS}" >> ${BUILD_CONFIG}
-		printf "not set business, to use default!\n"
-	fi
-
-	echo "LICHEE_BUSINESS="$LICHEE_BUSINESS
+	local val_list="$bussiness"
+	local cfg_key="LICHEE_BUSSINESS"
+	mk_select "$val_list" "$cfg_key"
 }
 
 function select_chip()
 {
-	local cnt=0
-	local choice
-	local call=$1
-
-	printf "All available chips:\n"
-	for chipdir in ${LICHEE_TOOLS_DIR}/pack/chips/* ; do
-		chips[$cnt]=`basename $chipdir`
-		printf "%4d. %s\n" $cnt ${chips[$cnt]}
-		((cnt+=1))
-	done
-
-	while true ; do
-		read -p "Choice: " choice
-		if [ -z "${choice}" ] ; then
-			continue
-		fi
-
-		if [ -z "${choice//[0-9]/}" ] ; then
-			if [ $choice -ge 0 -a $choice -lt $cnt ] ; then
-				export LICHEE_CHIP="${chips[$choice]}"
-				echo "export LICHEE_CHIP=${chips[$choice]}" >> ${BUILD_CONFIG}
-				break
-			fi
-		fi
-		printf "Invalid input ...\n"
-	done
+	local val_list=$(list_subdir $LICHEE_TOOLS_DIR/pack/chips)
+	local cfg_key="LICHEE_CHIP"
+	mk_select "$val_list" "$cfg_key"
 }
 
 function select_platform()
 {
-	local cnt=0
-	local choice
-	local call=$1
-	local platform=""
-
-	select_chip
-
-	printf "All available platforms:\n"
-	for platform in ${platforms[@]} ; do
-		printf "%4d. %s\n" $cnt $platform
-		((cnt+=1))
-	done
-
-	while true ; do
-		read -p "Choice: " choice
-		if [ -z "${choice}" ] ; then
-			continue
-		fi
-
-		if [ -z "${choice//[0-9]/}" ] ; then
-			if [ $choice -ge 0 -a $choice -lt $cnt ] ; then
-				export LICHEE_PLATFORM="${platforms[$choice]}"
-				echo "export LICHEE_PLATFORM=${platforms[$choice]}" >> ${BUILD_CONFIG}
-				break
-			fi
-		fi
-		printf "Invalid input ...\n"
-	done
-}
-
-function select_kern_only()
-{
-	local cnt=0
-	local choice
-
-	printf "All available kernel:\n"
-	for kern_dir in ${LICHEE_TOP_DIR}/linux-* ; do
-		kern_vers[$cnt]=`basename $kern_dir`
-		printf "%4d. %s\n" $cnt ${kern_vers[$cnt]}
-		((cnt+=1))
-	done
-
-	while true ; do
-		read -p "Choice: " choice
-		if [ -z "${choice}" ] ; then
-			continue
-		fi
-
-		if [ -z "${choice//[0-9]/}" ] ; then
-			if [ $choice -ge 0 -a $choice -lt $cnt ] ; then
-				LICHEE_KERN_VER="${kern_vers[$choice]}"
-				export LICHEE_KERN_VER="${kern_vers[$choice]}"
-				export LICHEE_KERN_DIR=${LICHEE_TOP_DIR}/${LICHEE_KERN_VER}
-				echo "export LICHEE_KERN_VER=${kern_vers[$choice]}" >> ${BUILD_CONFIG}
-				break
-			fi
-		fi
-		printf "Invalid input ...\n"
-	done
+	local val_list="${platforms[@]}"
+	local cfg_key="LICHEE_PLATFORM"
+	mk_select "$val_list" "$cfg_key"
 }
 
 function select_kern_ver()
 {
-	local cnt=0
-	local choice
-
-	select_business
-
-	if [ "x${LICHEE_CHIP}" = "xsun8iw1p1" \
-		-o "x${LICHEE_CHIP}" = "xsun6i" ] ; then
-		LICHEE_KERN_VER="linux-3.3"
-	elif [ "x${LICHEE_CHIP}" = "xsun8iw6p1" \
-		-o "x${LICHEE_CHIP}" = "xsun8iw8p1" \
-		-o "x${LICHEE_CHIP}" = "xsun9iw1p1" ] ; then
-		LICHEE_KERN_VER="linux-3.4"
-	elif [ "x${LICHEE_CHIP}" = "xsun8iw12p1" ] ; then
-		LICHEE_KERN_VER="linux-4.4"
-	else
-		LICHEE_KERN_VER="linux-3.10"
-	fi
-
-	printf "using kernel '${LICHEE_KERN_VER}':\n"
-	export LICHEE_KERN_VER
-	export LICHEE_KERN_DIR=${LICHEE_TOP_DIR}/${LICHEE_KERN_VER}
-	echo "export LICHEE_KERN_VER=${LICHEE_KERN_VER}" >> ${BUILD_CONFIG}
-
-	if [ "x${LICHEE_CHIP}" = "xsun8iw7p1" ] ; then
-		printf "All available kernel:\n"
-		for kern_dir in ${LICHEE_TOP_DIR}/linux-* ; do
-			kern_vers[$cnt]=`basename $kern_dir`
-			printf "%4d. %s\n" $cnt ${kern_vers[$cnt]}
-			((cnt+=1))
-		done
-
-		while true ; do
-			read -p "Choice: " choice
-			if [ -z "${choice}" ] ; then
-				continue
-			fi
-
-			if [ -z "${choice//[0-9]/}" ] ; then
-				if [ $choice -ge 0 -a $choice -lt $cnt ] ; then
-					LICHEE_KERN_VER="${kern_vers[$choice]}"
-					export LICHEE_KERN_VER="${kern_vers[$choice]}"
-					export LICHEE_KERN_DIR=${LICHEE_TOP_DIR}/${LICHEE_KERN_VER}
-					echo "export LICHEE_KERN_VER=${kern_vers[$choice]}" >> ${BUILD_CONFIG}
-					break
-				fi
-			fi
-			printf "Invalid input ...\n"
-		done
-	fi
+	local val_list=$(list_subdir $LICHEE_TOP_DIR | grep "linux-")
+	local cfg_key="LICHEE_KERN_VER"
+	mk_select "$val_list" "$cfg_key"
 }
 
 function select_arch()
 {
-	local cnt=0
-	local choice
-
-	select_kern_ver
-
+	# for all self config, we normal not use
 	if [ x${CONFIG_ALL} == x${FLAGS_TRUE} ]; then
-		printf "All available arch:\n"
-		for arch_dir in ${LICHEE_KERN_DIR}/arch/arm* ; do
-			archs[$cnt]=`basename $arch_dir`
-			printf "%4d. %s\n" $cnt ${archs[$cnt]}
-			((cnt+=1))
-		done
-
-		while true ; do
-			read -p "Choice: " choice
-			if [ -z "${choice}" ] ; then
-				continue
-			fi
-
-			if [ -z "${choice//[0-9]/}" ] ; then
-				if [ $choice -ge 0 -a $choice -lt $cnt ] ; then
-					export LICHEE_ARCH="${archs[$choice]}"
-					echo "export LICHEE_ARCH=${archs[$choice]}" >> ${BUILD_CONFIG}
-					break
-				fi
-			fi
-			printf "Invalid input ...\n"
-		done
+		local val_list=$(list_subdir $LICHEE_KERN_DIR/arch | grep "arm")
+		local cfg_key="LICHEE_ARCH"
+		mk_select "$val_list" "$cfg_key"
 	else
 		if [ -n "`echo ${LICHEE_CHIP} | grep "sun5[0-9]i"`" ]; then
 			export LICHEE_ARCH="arm64"
-			echo "export LICHEE_ARCH=arm64" >> ${BUILD_CONFIG}
 		else
 			export LICHEE_ARCH="arm"
-			echo "export LICHEE_ARCH=arm" >> ${BUILD_CONFIG}
 		fi
+		save_config "LICHEE_ARCH" "$LICHEE_ARCH" $BUILD_CONFIG
 	fi
 }
 
 function select_board()
 {
-	local cnt=0
-	local choice
-
-	select_arch
-
-	if [ "x${LICHEE_PLATFORM}" = "xandroid" ] ; then
-		export LICHEE_BOARD=""
-		echo "export LICHEE_BOARD=" >> ${BUILD_CONFIG}
-		return 0
-	fi
-
-	printf "All available boards:\n"
-	for boarddir in ${LICHEE_TOOLS_DIR}/pack/chips/${LICHEE_CHIP}/configs/* ; do
-		boards[$cnt]=`basename $boarddir`
-		if [ "x${boards[$cnt]}" = "xdefault" ] ; then
-			continue
-		fi
-		printf "%4d. %s\n" $cnt ${boards[$cnt]}
-		((cnt+=1))
-	done
-
-	while true ; do
-		read -p "Choice: " choice
-		if [ -z "${choice}" ] ; then
-			continue
-		fi
-
-		if [ -z "${choice//[0-9]/}" ] ; then
-			if [ $choice -ge 0 -a $choice -lt $cnt ] ; then
-				export LICHEE_BOARD="${boards[$choice]}"
-				echo "export LICHEE_BOARD=${boards[$choice]}" >> ${BUILD_CONFIG}
-				break
-			fi
-		fi
-		printf "Invalid input ...\n"
-	done
+	local val_list=$(list_subdir $LICHEE_TOOLS_DIR/pack/chips/$LICHEE_CHIP/configs | grep -v default)
+	local cfg_key="LICHEE_BOARD"
+	mk_select "$val_list" "$cfg_key"
 }
 
 function mkbr()
@@ -740,7 +393,7 @@ function mkbr()
 
 function clbr()
 {
-	mk_info "build buildroot ..."
+	mk_info "clean buildroot ..."
 
 	local build_script="scripts/build.sh"
 	(cd ${LICHEE_BR_DIR} && [ -x ${build_script} ] && ./${build_script} "clean")
@@ -755,85 +408,53 @@ function prepare_toolchain()
 	local GCC_PREFIX="";
 	local toolchain_archive="";
 	local tooldir="";
-	local toolchain_32_archive="";
-	local tooldir_32="";
 
-	cat ${BUILD_CONFIG}
 	mk_info "Prepare toolchain ..."
 
-	if [ $(getconf LONG_BIT) = "64" ]; then
-		if [ "x${LICHEE_ARCH}" = "xarm64" ]; then
-			ARCH="aarch64"
-			if [ -n "`echo $LICHEE_KERN_VER | grep "linux-4.4"`" ]; then
-				toolchain_archive="${LICHEE_TOOLS_DIR}/build/toolchain/x86_64/gcc-linaro-5.3.1-2016.05-x86_64_aarch64-linux-gnu.tar.xz";
-			else
-				toolchain_archive="${LICHEE_TOOLS_DIR}/build/toolchain/x86_64/gcc-linaro-aarch64.tar.xz";
-			fi
-
-			if [ "x${LICHEE_PLATFORM}" = "xdragonboard" ] ; then
-				toolchain_32_archive="${LICHEE_TOOLS_DIR}/build/toolchain/gcc-linaro-arm.tar.xz"
-			fi
-		elif [ "x${LICHEE_ARCH}" = "xarm" ]; then
-			ARCH="arm"
-			if [ -n "`echo $LICHEE_KERN_VER | grep "linux-4.4"`" ] || [ -n "`echo $LICHEE_KERN_VER | grep "linux-4.9"`" ]; then
-				toolchain_archive="${LICHEE_TOOLS_DIR}/build/toolchain/x86_64/gcc-linaro-5.3.1-2016.05-x86_64_arm-linux-gnueabi.tar.xz";
-			else
-				toolchain_archive="${LICHEE_TOOLS_DIR}/build/toolchain/x86_64/gcc-linaro-arm.tar.xz";
-			fi
+	if [ "x${LICHEE_ARCH}" = "xarm64" ]; then
+		ARCH="aarch64"
+		if [ -n "`echo $LICHEE_KERN_VER | grep "linux-4.4"`" ]; then
+			toolchain_archive="${LICHEE_TOOLS_DIR}/build/toolchain/gcc-linaro-5.3.1-2016.05-x86_64_aarch64-linux-gnu.tar.xz";
 		else
-			echo "LICHEE_ARCH=${LICHEE_ARCH} is unkown"
-			exit 1
+			toolchain_archive="${LICHEE_TOOLS_DIR}/build/toolchain/gcc-linaro-aarch64.tar.xz";
 		fi
-    else
-		if [ "x${LICHEE_ARCH}" = "xarm64" ]; then
-			ARCH="aarch64"
-			if [ -n "`echo $LICHEE_KERN_VER | grep "linux-4.4"`" ]; then
-				toolchain_archive="${LICHEE_TOOLS_DIR}/build/toolchain/i686/gcc-linaro-5.3.1-2016.05-i686_aarch64-linux-gnu.tar.xz";
-			else
-				mk_error "toolchain not support in 32bit system...."
-			fi
-		elif [ "x${LICHEE_ARCH}" = "xarm" ]; then
-			ARCH="arm"
-			if [ -n "`echo $LICHEE_KERN_VER | grep "linux-4.4"`" ] || [ -n "`echo $LICHEE_KERN_VER | grep "linux-4.9"`" ]; then
-				toolchain_archive="${LICHEE_TOOLS_DIR}/build/toolchain/i686/gcc-linaro-5.3.1-2016.05-i686_arm-linux-gnueabi.tar.xz";
-			else
-				mk_error "toolchain not support in 32bit system...."
-			fi
+	elif [ "x${LICHEE_ARCH}" = "xarm" ]; then
+		ARCH="arm"
+		if [ -n "`echo $LICHEE_KERN_VER | grep "linux-4.4"`" ] || [ -n "`echo $LICHEE_KERN_VER | grep "linux-4.9"`" ]; then
+			toolchain_archive="${LICHEE_TOOLS_DIR}/build/toolchain/gcc-linaro-5.3.1-2016.05-x86_64_arm-linux-gnueabi.tar.xz";
 		else
-			echo "LICHEE_ARCH=${LICHEE_ARCH} is unkown"
-			exit 1
+			toolchain_archive="${LICHEE_TOOLS_DIR}/build/toolchain/gcc-linaro-arm.tar.xz";
 		fi
+	else
+		exit 1
 	fi
 
-	tooldir=${LICHEE_OUT_DIR}/external-toolchain/gcc-${ARCH}
-	tooldir_32=${LICHEE_OUT_DIR}/external-toolchain/gcc-arm
+	if [ -n "`echo $LICHEE_KERN_VER | grep "linux-4.4"`" ] || [ -n "`echo $LICHEE_KERN_VER | grep "linux-4.9"`" ]; then
+		tooldir=${LICHEE_OUT_DIR}/gcc-linaro-5.3.1-2016.05/gcc-${ARCH}
+	else
+		tooldir=${LICHEE_OUT_DIR}/external-toolchain/gcc-${ARCH}
+	fi
 
 	if [ ! -d "${tooldir}" ]; then
 		mkdir -p ${tooldir} || exit 1
 		tar --strip-components=1 -xf ${toolchain_archive} -C ${tooldir} || exit 1
-		if [ "x${LICHEE_ARCH}" = "xarm64" -a "x${LICHEE_PLATFORM}" = "xdragonboard" ] ; then
-			mkdir -p ${tooldir_32} || exit 1
-			tar --strip-components=1 -xf ${toolchain_32_archive} -C ${tooldir_32} || exit 1
-		fi
 	fi
 
-	export LICHEE_TOOLCHAIN_32_PATH=${tooldir_32}
 	GCC=$(find ${tooldir} -perm /a+x -a -regex '.*-gcc');
 	if [ -z "${GCC}" ]; then
 		tar --strip-components=1 -xf ${toolchain_archive} -C ${tooldir} || exit 1
 		GCC=$(find ${tooldir} -perm /a+x -a -regex '.*-gcc');
-		if [ "x${LICHEE_ARCH}" = "xarm64" -a "x${LICHEE_PLATFORM}" = "xdragonboard" ] ; then
-			tar --strip-components=1 -xf ${toolchain_32_archive} -C ${tooldir_32} || exit 1
-		fi
 	fi
-
-	echo ""
-	printf "\033[0;31;1mtoolchain path: ${tooldir} \033[0m\n"
-
 	GCC_PREFIX=${GCC##*/};
 
+	if [ "${tooldir}" == "${LICHEE_TOOLCHAIN_PATH}" \
+		-a "${LICHEE_CROSS_COMPILER}-gcc" == "${GCC_PREFIX}" \
+		-a -x "${GCC}" ]; then
+		return
+	fi
+
 	if ! echo $PATH | grep -q "${tooldir}" ; then
-		export PATH=${PATH}:${tooldir}/bin
+		export PATH=${tooldir}/bin:$PATH
 	fi
 
 	LICHEE_CROSS_COMPILER="${GCC_PREFIX%-*}";
@@ -845,11 +466,52 @@ function prepare_toolchain()
 		fi
 		export LICHEE_CROSS_COMPILER=${LICHEE_CROSS_COMPILER}
 		export LICHEE_TOOLCHAIN_PATH=${tooldir}
-		echo "export LICHEE_CROSS_COMPILER=${LICHEE_CROSS_COMPILER}" >> ${BUILD_CONFIG}
-		echo "export LICHEE_TOOLCHAIN_PATH=${tooldir}" >> ${BUILD_CONFIG}
+		save_config "LICHEE_CROSS_COMPILER" "$LICHEE_CROSS_COMPILER" $BUILD_CONFIG
+		save_config "LICHEE_TOOLCHAIN_PATH" "$tooldir" $BUILD_CONFIG
 	fi
-	printf "\033[0;31;1mcross compiler: ${LICHEE_CROSS_COMPILER} \033[0m\n"
-	echo ""
+}
+
+function prepare_dragonboard_toolchain()
+{
+	local ARCH="arm";
+	local GCC="";
+	local GCC_PREFIX="";
+	local toolchain_archive="${LICHEE_TOOLS_DIR}/build/toolchain/gcc-linaro-5.3.1-2016.05-x86_64_arm-linux-gnueabi.tar.xz";
+	local tooldir="";
+
+	mk_info "Prepare dragonboard toolchain ..."
+	tooldir=${LICHEE_OUT_DIR}/gcc-linaro-5.3.1-2016.05/dragonboard/gcc-arm
+
+	if [ ! -d "${tooldir}" ]; then
+		mkdir -p ${tooldir} || exit 1
+		tar --strip-components=1 -xf ${toolchain_archive} -C ${tooldir} || exit 1
+	fi
+
+
+	GCC=$(find ${tooldir} -perm /a+x -a -regex '.*-gcc');
+	if [ -z "${GCC}" ]; then
+		tar --strip-components=1 -xf ${toolchain_archive} -C ${tooldir} || exit 1
+		GCC=$(find ${tooldir} -perm /a+x -a -regex '.*-gcc');
+	fi
+	GCC_PREFIX=${GCC##*/};
+
+	if [ "${tooldir}" == "${LICHEE_TOOLCHAIN_PATH}" \
+		-a "${LICHEE_CROSS_COMPILER}-gcc" == "${GCC_PREFIX}" \
+		-a -x "${GCC}" ]; then
+		return
+	fi
+
+	if ! echo $PATH | grep -q "${tooldir}" ; then
+		export PATH=${tooldir}/bin:$PATH
+	fi
+
+
+	LICHEE_CROSS_COMPILER="${GCC_PREFIX%-*}";
+
+	if [ -n ${LICHEE_CROSS_COMPILER} ]; then
+		export LICHEE_CROSS_COMPILER=${LICHEE_CROSS_COMPILER}
+		export LICHEE_TOOLCHAIN_PATH=${tooldir}
+	fi
 }
 
 function mkkernel()
@@ -857,28 +519,20 @@ function mkkernel()
 	mk_info "build kernel ..."
 
 	local build_script="scripts/build.sh"
-	local isclean=$1
 
 	prepare_toolchain
 
 	# mark kernel .config belong to which platform
-	mk_info "will used config ${LICHEE_KERN_DEFCONF}"
-
 	local config_mark="${LICHEE_KERN_DIR}/.config.mark"
 	if [ -f ${config_mark} ] ; then
-		if ! grep -q "${LICHEE_KERN_DEFCONF}" ${config_mark} ; then
-			mk_info "clean last time build for different config used"
-			echo "${LICHEE_KERN_DEFCONF}" > ${config_mark}
+		if ! grep -q "${LICHEE_CHIP}_${LICHEE_BOARD}_${LICHEE_PLATFORM}" ${config_mark} ; then
+			mk_info "clean last time build for different platform"
 			(cd ${LICHEE_KERN_DIR} && [ -x ${build_script} ] && ./${build_script} "clean")
-		elif [ "x${isclean}" = "xclean" ] ; then
-			printf "\033[0;31;1mclean last time build for config cmd used\033[0m\n"
-			echo "${LICHEE_KERN_DEFCONF}" > ${config_mark}
-			(cd ${LICHEE_KERN_DIR} && [ -x ${build_script} ] && ./${build_script} "clean")
-		else
-			printf "\033[0;31;1muse last time build config\033[0m\n"
+			rm -rf ${LICHEE_KERN_DIR}/.config
+			echo "${LICHEE_CHIP}_${LICHEE_BOARD}_${LICHEE_PLATFORM}" > ${config_mark}
 		fi
 	else
-		echo "${LICHEE_PLATFORM}" > ${config_mark}
+		echo "${LICHEE_CHIP}_${LICHEE_BOARD}_${LICHEE_PLATFORM}" > ${config_mark}
 	fi
 
 	(cd ${LICHEE_KERN_DIR} && [ -x ${build_script} ] && ./${build_script})
@@ -889,15 +543,35 @@ function mkkernel()
 
 function clkernel()
 {
+	local clarg="clean"
+
+	if [ "x$1" == "xdistclean" ]; then
+		clarg="distclean"
+	fi
+
 	mk_info "clean kernel ..."
 
 	local build_script="scripts/build.sh"
 
 	prepare_toolchain
 
-	(cd ${LICHEE_KERN_DIR} && [ -x ${build_script} ] && ./${build_script} "clean")
+	(cd ${LICHEE_KERN_DIR} && [ -x ${build_script} ] && ./${build_script} "$clarg")
 
 	mk_info "clean kernel OK."
+}
+
+function cldragonboard()
+{
+	local tooldir=${LICHEE_OUT_DIR}/gcc-linaro-5.3.1-2016.05/dragonboard/gcc-arm
+	[ ! -d ${tooldir} ] && return
+	mk_info "clean dragonboard ..."
+
+	local script_dir="${LICHEE_TOP_DIR}/buildroot/target/common/scripts/"
+
+	local clean_script="clean.sh"
+	(cd ${script_dir} && [ -x ${clean_script} ] && ./${clean_script})
+
+	mk_info "clean dragonboard OK."
 }
 
 function mkboot()
@@ -913,12 +587,18 @@ function mksata()
 		mk_info "build sata ..."
 
 		local build_script="linux/bsptest/script/bsptest.sh"
-		(cd ${LICHEE_SATA_DIR} && [ -x ${build_script} ] && ./${build_script} -b all)
+		local sata_config="${LICHEE_SATA_DIR}/linux/bsptest/script/Config"
+		. ${sata_config}
+		if [ "x$BTEST_MODULE" = "x" ];then
+			BTEST_MODULE=all
+		fi
+
+		(cd ${LICHEE_SATA_DIR} && [ -x ${build_script} ] && ./${build_script} -b $BTEST_MODULE)
 
 		[ $? -ne 0 ] && mk_error "build kernel Failed" && return 1
 		mk_info "build sata OK."
 
-		(cd ${LICHEE_SATA_DIR} && [ -x ${build_script} ] && ./${build_script} -s all)
+		(cd ${LICHEE_SATA_DIR} && [ -x ${build_script} ] && ./${build_script} -s $BTEST_MODULE)
 	fi
 }
 
@@ -951,6 +631,9 @@ function mk_tinyandroid()
 		${ROOTFS}/lib/modules/
 
 	if [ "x$PACK_BSPTEST" = "xtrue" ];then
+		if [ -d ${ROOTFS}/target ];then
+ 			rm -rf ${ROOTFS}/target/*
+		fi
 		if [ -d ${LICHEE_SATA_DIR}/linux/target ]; then
 			mk_info "copy SATA rootfs_def"
 			cp -a ${LICHEE_SATA_DIR}/linux/target  ${ROOTFS}/
@@ -961,7 +644,7 @@ function mk_tinyandroid()
 	NEW_NR_SIZE=$(((($NR_SIZE+32)/16)*16))
 
 	echo "blocks: $NR_SIZE"M" -> $NEW_NR_SIZE"M""
-	make_ext4fs -l \
+	${LICHEE_TOOLS_DIR}/build/bin/make_ext4fs -l \
 		$NEW_NR_SIZE"M" ${LICHEE_PLAT_OUT}/rootfs.ext4 ${ROOTFS}
 	fsck.ext4 -y ${LICHEE_PLAT_OUT}/rootfs.ext4 > /dev/null
 }
@@ -979,7 +662,11 @@ function mk_defroot()
 
 	if [ ! -f ${ROOTFS} ]; then
 		mkdir -p ${ROOTFS}
-		tar -jxf ${LICHEE_TOOLS_DIR}/build/rootfs_tar/target_${LICHEE_ARCH}.tar.bz2 -C ${ROOTFS}
+		if [ -n "`echo $LICHEE_KERN_VER | grep "linux-4.[49]"`" ]; then
+			fakeroot tar -jxf ${LICHEE_TOOLS_DIR}/build/rootfs_tar/target-${LICHEE_ARCH}-linaro-5.3.tar.bz2 -C ${ROOTFS}
+		else
+			tar -jxf ${LICHEE_TOOLS_DIR}/build/rootfs_tar/target_${LICHEE_ARCH}.tar.bz2 -C ${ROOTFS}
+		fi
 	fi
 
 	mkdir -p ${ROOTFS}/lib/modules
@@ -987,32 +674,38 @@ function mk_defroot()
 		${ROOTFS}/lib/modules/
 
 	if [ "x$PACK_BSPTEST" = "xtrue" ];then
+		if [ -d ${ROOTFS}/target ];then
+ 			rm -rf ${ROOTFS}/target/*
+		fi
 		if [ -d ${LICHEE_SATA_DIR}/linux/target ]; then
 			mk_info "copy SATA rootfs_def"
 			cp -a ${LICHEE_SATA_DIR}/linux/target  ${ROOTFS}/
 		fi
 	fi
 
+	if [ "x$PACK_STABILITY" = "xtrue" -a -d ${LICHEE_KERN_DIR}/tools/sunxi ];then
+		cp -v ${LICHEE_KERN_DIR}/tools/sunxi/* ${ROOTFS}/bin
+	fi
+
 	(cd ${ROOTFS}; ln -fs bin/busybox init)
 
+	export PATH=$PATH:${LICHEE_TOOLS_DIR}/build/bin
 	fakeroot chown	 -h -R 0:0	${ROOTFS}
 	fakeroot mke2img -d ${ROOTFS} -G 4 -R 1 -B 0 -I 0 -o ${LICHEE_PLAT_OUT}/rootfs.ext4
-
 cat  > ${LICHEE_PLAT_OUT}/.rootfs << EOF
 chown -h -R 0:0 ${ROOTFS}
-makedevs -d \
+${LICHEE_TOOLS_DIR}/build/bin/makedevs -d \
 ${LICHEE_TOOLS_DIR}/build/rootfs_tar/_device_table.txt ${ROOTFS}
-mksquashfs \
-${ROOTFS} ${LICHEE_PLAT_OUT}/rootfs.squashfs -root-owned -no-progress -comp xz -noappend 
+${LICHEE_TOOLS_DIR}/build/bin/mksquashfs \
+${ROOTFS} ${LICHEE_PLAT_OUT}/rootfs.squashfs -root-owned -no-progress -comp xz -noappend
 EOF
 	chmod a+x ${LICHEE_PLAT_OUT}/.rootfs
-	fakeroot -- ${LICHEE_PLAT_OUT}/.rootfs 
+	fakeroot -- ${LICHEE_PLAT_OUT}/.rootfs
 }
 
 function mkrootfs()
 {
 	mk_info "build rootfs ..."
-	local GCC_32=""
 
 	if [ ${LICHEE_PLATFORM} = "linux" ] ; then
 
@@ -1022,16 +715,22 @@ function mkrootfs()
 			mk_defroot $1
 		else
 			if [ "x$PACK_BSPTEST" = "xtrue" ];then
+				if [ -d ${LICHEE_BR_OUT}/target ];then
+ 					rm -rf ${ROOTFS}/target/*
+				fi
 				if [ -d ${LICHEE_SATA_DIR}/linux/target ];then
 					mk_info "copy SATA rootfs"
 					cp -a ${LICHEE_SATA_DIR}/linux/target ${LICHEE_BR_OUT}/target/
 				fi
 			fi
 
-			make O=${LICHEE_BR_OUT} -C ${LICHEE_BR_DIR} \
-				BR2_TOOLCHAIN_EXTERNAL_PATH=${LICHEE_TOOLCHAIN_PATH} \
-				BR2_TOOLCHAIN_EXTERNAL_PREFIX=${LICHEE_CROSS_COMPILER} \
-				BR2_JLEVEL=${LICHEE_JLEVEL} target-post-image
+			# buildroot-201611 just not using this
+			if [ -z `echo $LICHEE_BR_DIR | grep "201611"` ]; then
+				make O=${LICHEE_BR_OUT} -C ${LICHEE_BR_DIR} \
+					BR2_TOOLCHAIN_EXTERNAL_PATH=${LICHEE_TOOLCHAIN_PATH} \
+					BR2_TOOLCHAIN_EXTERNAL_PREFIX=${LICHEE_CROSS_COMPILER} \
+					BR2_JLEVEL=${LICHEE_JLEVEL} target-post-image
+			fi
 
 			[ $? -ne 0 ] && mk_error "build rootfs Failed" && return 1
 
@@ -1042,82 +741,106 @@ function mkrootfs()
 			fi
 		fi
 	elif [ ${LICHEE_PLATFORM} = "dragonboard" ] ; then
-		echo "Regenerating dragonboard Rootfs..."
-		(
-			cd ${LICHEE_BR_DIR}/target/dragonboard; \
-			if [ ! -d "./rootfs" ]; then \
-				echo "extract dragonboard rootfs.tar.gz"; \
-				tar zxf rootfs.tar.gz; \
-			fi
-		)
-		mkdir -p ${LICHEE_BR_DIR}/target/dragonboard/rootfs/lib/modules
-		rm -rf ${LICHEE_BR_DIR}/target/dragonboard/rootfs/lib/modules/*
-		cp -rf ${LICHEE_KERN_DIR}/output/lib/modules/* \
-			${LICHEE_BR_DIR}/target/dragonboard/rootfs/lib/modules/
-
-		if [ "x${LICHEE_ARCH}" = "xarm64" ] ; then
-			GCC_32=$(find ${LICHEE_TOOLCHAIN_32_PATH} -perm /a+x -a -regex '.*-gcc');
-
-			if [ "x${GCC_32}" = "x" ] ; then
-				mk_error "toolchain_32: LICHEE_TOOLCHAIN_32_PATH is NULL"
-				exit 1
-			else
-				mk_info "toolchain_32="${LICHEE_TOOLCHAIN_32_PATH}
-				export PATH=${PATH}:${LICHEE_TOOLCHAIN_32_PATH}/bin
-			fi
+		# buildroot-201611 not supporting dragonboard, i am just say sorry,
+		# pls add it, but i just done nothing else
+		if [ -d ${LICHEE_TOP_DIR}/buildroot/target ]; then
+			echo "Regenerating dragonboard Rootfs..."
+			(
+			cd ${LICHEE_TOP_DIR}/buildroot/target/${LICHEE_PLATFORM}; \
+				if [ ! -d "./rootfs" ]; then \
+					echo "extract dragonboard rootfs.tar.gz"; \
+					tar zxf ../common/rootfs/rootfs.tar.gz; \
+				fi
+			)
+			prepare_dragonboard_toolchain
+			mkdir -p ${LICHEE_TOP_DIR}/buildroot/target/${LICHEE_PLATFORM}/rootfs/lib/modules
+			rm -rf ${LICHEE_TOP_DIR}/buildroot/target/${LICHEE_PLATFORM}/rootfs/lib/modules/*
+			cp -rf ${LICHEE_KERN_DIR}/output/lib/modules/* \
+				${LICHEE_TOP_DIR}/buildroot/target/${LICHEE_PLATFORM}/rootfs/lib/modules/
+			(cd ${LICHEE_TOP_DIR}/buildroot/target/common/scripts; ./build.sh)
+					[  $? -ne 0 ] && mk_error "build rootfs Failed" && return 1
+			cp ${LICHEE_TOP_DIR}/buildroot/target/${LICHEE_PLATFORM}/rootfs.ext4 ${LICHEE_PLAT_OUT}
 		fi
-
-		(cd ${LICHEE_BR_DIR}/target/dragonboard; ./build.sh)
-		if [ $? -ne 0 ] ; then
-			mk_info "build rootfs ERROT"
-			exit 1
-		fi
-		cp ${LICHEE_BR_DIR}/target/dragonboard/rootfs.ext4 ${LICHEE_PLAT_OUT}
 	else
 		mk_info "skip make rootfs for ${LICHEE_PLATFORM}"
 	fi
 
 	mk_info "build rootfs OK."
 }
+function cldtbo()
+{
+	local DTBO_DIR=${LICHEE_TOP_DIR}/tools/pack/chips/${LICHEE_CHIP}/configs/${LICHEE_BOARD}/dtbo
+	local DTBOIMG_OUT_DIR=${LICHEE_TOP_DIR}/out/${LICHEE_CHIP}/${LICHEE_PLATFORM}/common
+	if [ -d $DTBO_DIR ];  then
+		mk_info "clean dtbo ..."
+		rm -rf ${DTBO_DIR}/*.dtbo
+	fi
 
-#
-# Arg:
-#  -k clean, Clean linux default config
-#  -r f,  Clean root directory
-#
+	if [ -f ${DTBOIMG_OUT_DIR}/dtbo.img ]; then
+		mk_info "clean dtbo.img"
+		rm -rf ${DTBOIMG_OUT_DIR}/dtbo.img
+	fi
+
+}
+
+function mkdtbo()
+{
+	local DTBO_DIR=${LICHEE_TOP_DIR}/tools/pack/chips/${LICHEE_CHIP}/configs/${LICHEE_BOARD}/dtbo
+
+	if [ -d $DTBO_DIR ];  then
+		mk_info "build dtbo ..."
+		local DTC_FLAGS="-W no-unit_address_vs_reg"
+		local DTS_DIR=${DTBO_DIR}
+		local DTBO_OUT_DIR=${LICHEE_TOP_DIR}/out/${LICHEE_CHIP}/${LICHEE_PLATFORM}/common
+		local DTO_COMPILER=${LICHEE_TOP_DIR}/tools/build/dtbo/dtco
+
+		if [ ! -f $DTO_COMPILER ]; then
+			mk_info "mkdtbo: Can not find dtco compiler."
+			exit 1
+		fi
+
+		local out_file_name=0
+		for dts_file in ${DTS_DIR}/*.dts; do
+			out_file_name=${dts_file%.*}
+			$DTO_COMPILER ${DTC_FLAGS} -a 4 -@ -O dtb -o ${out_file_name}.dtbo ${dts_file}
+			if [ $? -ne 0 ]; then
+				mk_info "mkdtbo:create dtbo file failed"
+				exit 1
+			fi
+		done
+
+		local MKDTIMG=${LICHEE_TOP_DIR}/tools/build/dtbo/mkdtimg
+		local DTBOIMG_CFG_FILE=${DTBO_DIR}/dtboimg.cfg
+		local DTBOIMG_OUT_DIR=${LICHEE_TOP_DIR}/out/${LICHEE_CHIP}/${LICHEE_PLATFORM}/common
+		if [ -f ${MKDTIMG} ]; then
+			if [ -f ${DTBOIMG_CFG_FILE} ]; then
+				mk_info "mkdtbo: make  dtboimg start."
+				cd ${DTBO_DIR}/
+				${MKDTIMG} cfg_create ${DTBOIMG_OUT_DIR}/dtbo.img ${DTBOIMG_CFG_FILE}
+				${MKDTIMG} dump ${DTBOIMG_OUT_DIR}/dtbo.img
+				cd ${LICHEE_TOP_DIR}/tools/build/
+			else
+				mk_info "mkdtbo: Can not find dtboimg.cfg\n"
+				exit 1
+			fi
+		else
+			mk_info "mkdtbo: Can not find mkdtimg\n"
+			exit 1
+		fi
+
+	else
+		mk_info "don't build dtbo ..."
+	fi
+}
+
 function mklichee()
 {
-	local kern_par="";
-	local sata_par="";
-	local root_par="";
-
-	while [ $# -gt 0 ]; do
-		case "$1" in
-			-k*)
-				kern_par=$2;
-				break;
-				;;
-			-s*)
-				sata_par=$2;
-				break;
-				;;
-			-r*)
-				root_par=$2;
-				break;
-				;;
-			*)
-				;;
-		esac;
-		shift;
-	done
 
 	mk_info "----------------------------------------"
 	mk_info "build lichee ..."
 	mk_info "chip: $LICHEE_CHIP"
 	mk_info "platform: $LICHEE_PLATFORM"
-	mk_info "business: $LICHEE_BUSINESS"
 	mk_info "kernel: $LICHEE_KERN_VER"
-	mk_info "arch: $LICHEE_ARCH"
 	mk_info "board: $LICHEE_BOARD"
 	mk_info "output: out/${LICHEE_CHIP}/${LICHEE_PLATFORM}/${LICHEE_BOARD}"
 	mk_info "----------------------------------------"
@@ -1128,18 +851,26 @@ function mklichee()
 		mkbr
 	fi
 
-	mkkernel ${kern_par} && mksata ${sata_par} && mkrootfs ${root_par}
+	mkdtbo
+	if [ $? -ne 0 ]; then
+		mk_info "mkdtbo failed"
+		exit 1
+	fi
+	
+	mkkernel && mksata && mkrootfs $1
 
 	[ $? -ne 0 ] && return 1
 
-	printf "\033[0;31;1m----------------------------------------\033[0m\n"
-	printf "\033[0;31;1mbuild ${LICHEE_CHIP} ${LICHEE_PLATFORM} ${LICHEE_BUSINESS} lichee OK\033[0m\n"
-	printf "\033[0;31;1m----------------------------------------\033[0m\n"
+	mk_info "----------------------------------------"
+	mk_info "build lichee OK."
+	mk_info "----------------------------------------"
 }
 
 function mkclean()
 {
 	clkernel
+	cldragonboard
+	cldtbo
 
 	mk_info "clean product output in ${LICHEE_PLAT_OUT} ..."
 	cd ${LICHEE_PLAT_OUT}
@@ -1150,11 +881,11 @@ function mkclean()
 
 function mkdistclean()
 {
-	clkernel
+	clkernel "distclean"
 	if [ ${SKIP_BR} -eq 0 ]; then
 		clbr
 	fi
-
+	cldragonboard
 	mk_info "clean entires output dir ..."
 	rm -rf ${LICHEE_OUT_DIR}
 }
@@ -1165,7 +896,7 @@ function mkpack()
 
 	check_env
 
-	(cd ${LICHEE_TOOLS_DIR}/pack && \
+        (cd ${LICHEE_TOOLS_DIR}/pack && \
 		./pack -c ${LICHEE_CHIP} -p ${LICHEE_PLATFORM} -b ${LICHEE_BOARD} -k ${LICHEE_KERN_VER} $@)
 }
 

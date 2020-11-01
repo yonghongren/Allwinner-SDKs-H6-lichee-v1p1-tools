@@ -9,6 +9,7 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
+
 export LC_ALL=C
 BR_SCRIPTS_DIR=`dirname $0`
 BUILD_CONFIG=.buildconfig
@@ -24,13 +25,11 @@ SKIP_BR=0
 # WARN: Don't modify default value, because we will check it later
 DEFINE_string  'platform' ''          'Platform to build, e.g. sun9iw1p1'  'p'
 DEFINE_string  'kernel'   ''          'Kernel to build, e.g. 3.3'          'k'
-DEFINE_string  'arch'     ''          'arch to build, e.g. arm, arm64'     'a'
 DEFINE_string  'board'    ''          'Board to build, e.g. evb'           'b'
 DEFINE_string  'module'   'all'       'Module to build, e.g. buildroot, kernel, uboot, clean' 'm'
-DEFINE_string 'business' ''           'business to kernel config, e.g. eagle, secure'     'c'
-DEFINE_boolean 'config'   false       'Config compile platfom'             'C'
+
+DEFINE_boolean 'config'   false       'Config compile platfom'             'c'
 DEFINE_boolean 'force'    false       'Force to build, clean some old files. ex, rootfs/' 'f'
-DEFINE_boolean 'lunch'    false       'Lunch all board configuration'      'l'
 
 FLAGS_HELP="Top level build script for lichee
 
@@ -41,18 +40,11 @@ Examples:
       $ ./build.sh
 
   2. Configurate platform option
-    Old way:
+      $ ./build.sh -c
+        or
       $ ./build.sh config
         or
       $ ./build.sh --config
-        or
-      $ ./build.sh -C
-    New way:
-      $ ./build.sh lunch
-	or
-      $ ./build.sh --lunch
-        or
-      $ .nbuild.sh -l
 
   3. Pack linux, dragonboard image
       $ ./build.sh pack[_<option>] e.g. debug, dump, prvt
@@ -70,31 +62,18 @@ Examples:
       $ ./build.sh -f
 "
 
-# Set default param for action
-#
-force=""
-config_t="config"
-ker_arg="-k clean"
-rootfs_arg=""
-
-if [ $# -eq 0 ]; then
-	ker_arg=""
-fi
-
 # parse the command-line
 FLAGS "$@" || exit $?
 eval set -- "${FLAGS_ARGV}"
 
 chip=${FLAGS_platform%%_*}
 platform=${FLAGS_platform##*_}
-business=${FLAGS_business}
 kernel=${FLAGS_kernel}
 board=${FLAGS_board}
 module=${FLAGS_module}
-lunch=${FLAGS_lunch}
+config=${FLAGS_config}
+force=""
 
-#
-#set -ex
 ################ Preset an empty command #################
 function nfunc(){
 	echo "Begin Action"
@@ -111,17 +90,33 @@ while [ $# -gt 0 ]; do
 		else
 			export CONFIG_ALL=${FLAGS_FALSE};
 		fi
-
-		config_t="config_build";
 		FLAGS_config=${FLAGS_TRUE};
 		break;
 		;;
-	lunch*)
-		FLAGS_lunch=${FLAGS_TRUE};
+	gen*)
+		opt=${1##*_};
+		if [ "${opt}" == "config" ]; then
+			cd ${LICHEE_KERN_VER}/
+			printf "\033[47;41mPrepare to use script to generate the android defconfig.\033[0m\n"
+			ARCH=${LICHEE_ARCH} ./scripts/kconfig/merge_config.sh \
+				 arch/${LICHEE_ARCH}/configs/${LICHEE_CHIP}smp_defconfig \
+				 kernel/configs/android-base.config  \
+				 kernel/configs/android-recommended.config  \
+				 kernel/configs/sunxi-recommended.config
+			if [ -f .config ]; then
+				printf "\033[47;41mComplete the build config,save to ${LICHEE_KERN_VER}/.config !!!\033[0m\n"
+				cp .config arch/${LICHEE_ARCH}/configs/${LICHEE_CHIP}smp_android_defconfig
+			fi
+			cd ..
+			exit 0
+		else
+			echo "Do not support this command!!"
+			exit 1
+		fi
 		break;
 		;;
 	pack*)
-		opt=${1##*_};
+		opt=${1#*_};
 		mode="";
 		if [ "${opt}" == "debug" ]; then
 			mode="-d card0";
@@ -143,19 +138,33 @@ while [ $# -gt 0 ]; do
 			mode="-s prev_refurbish";
 		fi
 
+		if [ "${opt}" == "crash" ]; then
+			mode="-m crashdump";
+		fi
+
+		if [ "${opt}" == "vsp" ]; then
+			mode="-t vsp";
+		fi
+
+		if [ "${opt}" == "debug_secure" ]; then
+			mode="-d card0 -s secure";
+		fi
+
+		if [ "${opt}" == "raw" ]; then
+			mode="-w programmer";
+		fi
+
 		######### Don't build other module, if pack firmware ########
 		ACTION="mkpack ${mode};";
 		module="";
-
 		break;
 		;;
 	clean|distclean)
-		ACTION="mkclean;";
+		ACTION="mk${1};";
 		module="";
 		break;
 		;;
-	*)
-		;;
+	*) ;;
 	esac;
 	shift;
 done
@@ -164,40 +173,29 @@ done
 source ${BR_SCRIPTS_DIR}/mkcmd.sh
 
 # if not .buildconfig or FLAGS_config equal FLAGS_TRUE, then mksetup.sh & exit
-if [ ${FLAGS_lunch} -eq ${FLAGS_TRUE} \
-	-o  ${FLAGS_config} -eq ${FLAGS_TRUE} ]; then
-
-	if [ ${FLAGS_lunch} -eq ${FLAGS_TRUE} ]; then
-		config_t="lunch"
-	fi
-
-	. ${BR_SCRIPTS_DIR}/mksetup.sh "${config_t%%_*}"
-
-	if [ ${FLAGS_config} -eq ${FLAGS_TRUE} \
-		-a "x${config_t##*_}x" != "xbuildx" ]; then
+if [ ! -f ${BUILD_CONFIG}  -o  ${FLAGS_config} -eq ${FLAGS_TRUE} ]; then
+	. ${BR_SCRIPTS_DIR}/mksetup.sh
+	if [ ${FLAGS_config} -eq ${FLAGS_TRUE} ]; then
 		exit 0;
 	fi
 fi
 
 if [ ${FLAGS_force} -eq ${FLAGS_TRUE} ]; then
-	force="f"
-	rootfs_arg="-r f";
+	force="f";
 fi
 
-# To compatible old platform.
 # sun8i & linux-3.x should using buildroot, as we done in top_build.sh
-if [ ! -z "`echo ${chip} | grep "sun5[0-9]i"`" \
-	-o ! -z "`echo ${LICHEE_CHIP} | grep "sun5[0-9]i"`" \
-	-o ! -z "`echo ${LICHEE_CHIP} | grep "sun8iw12"`" \
-	-o ! -z "`echo ${chip} | grep "sun8iw12"`" \
-	-o ! -z "`echo ${kernel} | grep "linux-4.4"`" \
-	-o ! -z "`echo ${LICHEE_KERN_VER} | grep "linux-4.4"`" ] ;  then
-	SKIP_BR=1
+if [ -z "`echo ${LICHEE_CHIP} | grep "sun5[0-9]i"`" \
+              -a -z "`echo ${LICHEE_KERN_VER} | grep "linux-4.4"`" \
+              -a -z "`echo ${LICHEE_KERN_VER} | grep "linux-4.9"`" \
+              -a "x$1" != "xconfig" ]; then \
+              cd  ${LICHEE_TOP_DIR}
+       buildroot/scripts/mkcommon.sh $@
+       exit $?
 else
-	cd  ${LICHEE_TOP_DIR}
-	buildroot/scripts/mkcommon.sh $@
-	exit $?
+	SKIP_BR=1;
 fi
+
 
 if [ -n "${platform}" -o -n "${chip}" \
 	-o -n "${kernel}" -o -n "${board}" ]; then \
@@ -212,23 +210,14 @@ if [ -n "${platform}" -o -n "${chip}" \
 		exit 1;
 	fi
 
-	if ! init_business ${chip} ${business} ; then
-		mk_error "invalid business '${FLAGS_business}'  need to set business like -c [business]"
-		exit 1
-	fi
-
 	if ! init_kern_ver ${kernel} ; then \
 		mk_error "Invalid kernel '${FLAGS_kernel}'";
 		exit 1;
 	fi
 
-	if ! init_arch ${arch} ; then
-		mk_error "invalid arch '${FLAGS_arch}'  need to set arch like -a [arch]"
-		exit 1
-	fi
-
-	if ! init_boards ${LICHEE_CHIP} ${board} ; then \
-		mk_error "Invalid board '${FLAGS_board}' need to set board like -b [board]";
+	if [ ${FLAGS_board} ] && \
+		! init_boards ${LICHEE_CHIP} ${board} ; then \
+		mk_error "Invalid board '${FLAGS_board}'";
 		exit 1;
 	fi
 fi
@@ -236,13 +225,16 @@ fi
 # init default config
 init_defconf
 
+# init disclaimer notice
+init_disclaimer
+
 ############### Append ',' end character #################
 module="${module},"
 while [ -n "${module}" ]; do
 	act=${module%%,*};
 	case ${act} in
 		all*)
-			ACTION="mklichee ${ker_arg} ${rootfs_arg};";
+			ACTION="mklichee;";
 			module="";
 			break;
 			;;

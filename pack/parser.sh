@@ -5,7 +5,6 @@
 ROOT_DIR=$PWD
 TOOLS_DIR=${ROOT_DIR}/pctools/linux
 FIRMWARE_NAME="1.img"
-OUTPUT_NAME_BZ2="vmlinux.tar.bz2"
 OUTPUT_NAME="vmlinux"
 MAINTYPE_NAME="12345678"
 SUBTYPE_NAME="123456789VMLINUX"
@@ -27,20 +26,12 @@ show_help()
 
 parser_file()
 {
-	OUTPUT_NAME_BZ2=${OUTPUT_NAME}".tar.bz2"
 	parser_img $FIRMWARE_NAME $OUTPUT_NAME $MAINTYPE_NAME $SUBTYPE_NAME
 	if [ $? -ne 0 ]
 	then
 		echo -e "\033[40;31;1m [parser file in the firmware fail]\033[0m"
 	else
 		echo -e "\033[40;32;1m [parser file in the firmware ok]\033[0m"
-		tar -xjvf $OUTPUT_NAME_BZ2 $OUTPUT_NAME
-		if [ $? -eq 0 ]
-		then
-			echo -e "\033[40;32;1m [unzip file successful]\033[0m"
-		else
-			echo -e "\033[40;31;1m [unzip file fail]\033[0m"
-		fi
 	fi
 }
 

@@ -33,6 +33,7 @@ size = 16
 ;********************************************************************************************************
 [partition_start]
 
+
 [partition]
     name         = boot
     size         = 8192
@@ -43,11 +44,6 @@ size = 16
     name         = rootfs
     size         = 16384
     downloadfile = "rootfs_nor.fex"
-    user_type    = 0x8000
-
-[partition]
-    name         = overlay
-    size         = 2048
     user_type    = 0x8000
 
 [partition]

@@ -35,9 +35,9 @@ size = 16384
 
 ;------------------------------> mmcblk0p2/nanda
 [partition]
-    name         = boot_logo
-    size	 = 512
-    downloadfile = "boot_logo.fex"
+    name         = boot-resource
+    size         = 65536
+    downloadfile = "boot-resource.fex"
     user_type    = 0x8000
 
 ;------------------------------> mmcblk0p5/nandb
@@ -55,17 +55,7 @@ size = 16384
 
 [partition]
     name         = rootfs
-    size         = 131072
+    size         = 102400
     downloadfile = "rootfs.fex"
     user_type    = 0x8000
 
-[partition]
-    name         = private
-    size         = 1024
-    user_type    = 0x8000
-
-[partition]
-    name         = misc
-    size         = 256
-    user_type    = 0x8000
-    backup_flag    = 0x8000

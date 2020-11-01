@@ -461,6 +461,22 @@ lcdvsync            = port:PD27<2><0><default><default>
 
 
 ;----------------------------------------------------------------------------------
+;tv configuration
+;dac_src            (dac no,support dac_src0~dac_src3,dac num max is 4)
+;interface          (interface type,1<->cvbs,2<->YPBPR,4<->SVIDEO)
+;dac_type           (0<->composite,1<->luma,2<->chroma,3<->reserved,4<->y/green,
+;                    5<->u/pb/blue,6<->v/pr/red)
+;NOTE:              tv0,tv1 can not use the same dac_src.
+;----------------------------------------------------------------------------------
+
+[tv0]
+used            = 1
+
+dac_src0        = 0
+dac_type0       = 0
+
+interface       = 1
+;----------------------------------------------------------------------------------
 ;pwm config
 ;----------------------------------------------------------------------------------
 [pwm0]

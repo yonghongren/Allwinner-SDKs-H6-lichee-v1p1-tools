@@ -37,7 +37,7 @@ size = 16384
 [partition]
     name         = bootloader
     size	     = 32768
-    downloadfile = "bootloader.fex"
+    downloadfile = "boot-resource.fex"
 
 [partition]
     name         = env

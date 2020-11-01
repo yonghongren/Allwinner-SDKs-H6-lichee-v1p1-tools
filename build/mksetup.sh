@@ -11,26 +11,15 @@
 
 . tools/build/mkcmd.sh
 
-#
-# parameter: config_type, lunch or config.
-#
 function mksetup()
 {
-	local config_type=$1
+    init_disclaimer
+    printf "\n"
+    printf "Welcome to mkscript setup progress\n"
 
-	rm -f .buildconfig
-	printf "\n"
-	printf "Welcome to mkscript setup progress\n"
-
-	if [ "x${config_type}" = "xlunch" ] ; then
-		select_lunch
-	else
-		select_board
-	fi
-
-	init_defconf
+    mk_config
 }
 
 # Setup all variables in setup.
-mksetup $@
+mksetup
 

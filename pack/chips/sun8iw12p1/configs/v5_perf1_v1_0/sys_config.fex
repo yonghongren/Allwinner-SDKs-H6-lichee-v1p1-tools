@@ -31,23 +31,22 @@ storage_type    = -1
 ;----------------------------------------------------------------------------------
 
 [power_sply]
-dcdc1_vol                  = 1003300
+;dcdc1_vol                  = 3300
+dc1sw_vol                  = 1003300
 dcdc2_vol                  = 1000900
-;dcdc3_vol                  = 900
-;dcdc4_vol                  = 1800
+dcdc4_vol                  = 1001800
 ;dcdc5_vol                  = 1200
 ;dc5ldo_vol                 = 900
-aldo1_vol                  = 1003300
-aldo2_vol                  = 1003300
+;aldo1_vol                  = 1003300
+;aldo2_vol                  = 3300
 ;aldo3_vol                  = 1000800
-dldo1_vol                  = 1001800
+;dldo1_vol                  = 2800
 ;dldo2_vol                  = 900
 eldo1_vol                   = 1001800
 eldo2_vol                  = 1003300
 eldo3_vol                  = 1003300
 ;gpio0_vol                  = 1800
 ;gpio1_vol                  = 3300
-dc1sw_vol                   = 1003300
 
 [card_boot]
 logical_start   = 40960
@@ -119,7 +118,7 @@ pll10           = 264
 ;if dram_clk != 0, dram clk set to be dram_clk(24*n MHz,n > 12)
 ;*****************************************************************************
 [dram_para]
-dram_clk	= 792
+dram_clk	= 0
 dram_type	= 7
 dram_zq 	= 0x3B3BFB
 dram_odt_en	= 0x1
@@ -211,16 +210,77 @@ twi2_sda         = port:PI02<5><default><default><default>
 twi3_used        = 1
 twi3_scl         = port:PI8<5><default><default><default>
 twi3_sda         = port:PI9<5><default><default><default>
+
 ;----------------------------------------------------------------------------------
 ;uart configuration
 ;uart_type ---  2 (2 wire), 4 (4 wire), 8 (8 wire, full function)
 ;----------------------------------------------------------------------------------
 [uart0]
-uart_used       = 1
-uart_port       = 0
-uart_type       = 2
-uart_tx         = port:PB09<2><1><default><default>
-uart_rx         = port:PB10<2><1><default><default>
+uart0_used       = 1
+uart0_port       = 0
+uart0_type       = 2
+uart0_tx         = port:PB09<2><1><default><default>
+uart0_rx         = port:PB10<2><1><default><default>
+
+[uart0_suspend]
+uart0_tx         = port:PB09<7><1><default><default>
+uart0_rx         = port:PB10<7><1><default><default>
+
+[uart1]
+uart1_used       = 0
+uart1_port       = 1
+uart1_type       = 4
+uart1_tx         = port:PG6<2><1><default><default>
+uart1_rx         = port:PG7<2><1><default><default>
+uart1_rts        = port:PG8<2><1><default><default>
+uart1_cts        = port:PG9<2><1><default><default>
+
+[uart1_suspend]
+uart1_tx         = port:PG6<7><1><default><default>
+uart1_rx         = port:PG7<7><1><default><default>
+uart1_rts        = port:PG8<7><1><default><default>
+uart1_cts        = port:PG9<7><1><default><default>
+
+[uart2]
+uart2_used       = 0
+uart2_port       = 2
+uart2_type       = 4
+uart2_tx         = port:PB0<2><1><default><default>
+uart2_rx         = port:PB1<2><1><default><default>
+uart2_rts        = port:PB2<2><1><default><default>
+uart2_cts        = port:PB3<2><1><default><default>
+
+[uart2_suspend]
+uart2_tx         = port:PB0<7><1><default><default>
+uart2_rx         = port:PB1<7><1><default><default>
+uart2_rts        = port:PB2<7><1><default><default>
+uart2_cts        = port:PB3<7><1><default><default>
+
+[uart3]
+uart3_used       = 0
+uart3_port       = 3
+uart3_type       = 2
+uart3_tx         = port:PH05<2><1><1><default>
+uart3_rx         = port:PH06<2><1><1><default>
+
+[uart3_suspend]
+uart3_tx         = port:PH05<7><1><default><default>
+uart3_rx         = port:PH06<7><1><default><default>
+
+[uart4]
+uart4_used       = 0
+uart4_port       = 4
+uart4_type       = 4
+uart4_tx         = port:PH00<5><1><default><default>
+uart4_rx         = port:PH01<5><1><default><default>
+uart4_rts        = port:PH15<5><1><default><default>
+uart4_cts        = port:PH14<5><1><default><default>
+
+[uart4_suspend]
+uart4_tx         = port:PH00<7><1><default><default>
+uart4_rx         = port:PH01<7><1><default><default>
+uart4_rts        = port:PH15<7><1><default><default>
+uart4_cts        = port:PH14<7><1><default><default>
 
 ;----------------------------------------------------------------------------------
 ;SPI controller configuration
@@ -290,8 +350,8 @@ spi-tx-bus-width  = 1
 [gpadc]
 gpadc_used			= 1
 channel_num			= 4
-channel_select			= 0x01
-channel_data_select		= 0
+channel_select			= 0x03
+channel_data_select		= 0x02
 channel_compare_select		= 0x01
 channel_cld_select		= 0x01
 channel_chd_select		= 0x00
@@ -303,6 +363,29 @@ channel2_compare_lowdata	= 460000
 channel2_compare_higdata	= 1200000
 channel3_compare_lowdata	= 460000
 channel3_compare_higdata	= 1200000
+key_cnt                         = 5
+key0_vol                        = 115
+key0_val                        = 115
+key1_vol                        = 240
+key1_val                        = 114
+key2_vol                        = 500
+key2_val                        = 139
+key3_vol                        = 700
+key3_val                        = 28
+key4_vol                        = 890
+key4_val                        = 102
+
+;----------------------------------------------------------------------------------
+;resistance tp configuration
+;----------------------------------------------------------------------------------
+[rtp_para]
+rtp_used      = 0
+rtp_screen_size = 5
+rtp_regidity_level = 5
+rtp_press_threshold_enable = 0
+rtp_press_threshold = 0x1f40
+rtp_sensitive_level = 0xf
+rtp_exchange_x_y_flag = 0
 
 ;----------------------------------------------------------------------------------
 ;capacitor tp configuration
@@ -311,7 +394,7 @@ channel3_compare_higdata	= 1200000
 ;notice ---    tp_int_port &  tp_io_port use the same port
 ;----------------------------------------------------------------------------------
 [ctp_para]
-ctp_used            = 0
+ctp_used            = 1
 ctp_twi_id          = 1
 ctp_twi_addr        = 0x5d
 ctp_screen_max_x    = 1280
@@ -424,23 +507,6 @@ lcd1_hue                 = 50
 output_disp = 0
 output_type = 1
 output_mode = 4
-
-;----------------------------------------------------------------------------------
-;tv configuration
-;dac_src            (dac no,support dac_src0~dac_src3,dac num max is 4)
-;interface          (interface type,1<->cvbs,2<->YPBPR,4<->SVIDEO)
-;dac_type           (0<->composite,1<->luma,2<->chroma,3<->reserved,4<->y/green,
-;                    5<->u/pb/blue,6<->v/pr/red)
-;NOTE:              tv0,tv1 can not use the same dac_src.
-;----------------------------------------------------------------------------------
-
-[tv0]
-used            = 1
-
-dac_src0        = 0
-dac_type0       = 0
-
-interface       = 1
 ;----------------------------------------------------------------------------------
 ;hdmi configuration
 ;hdmi_used:             if hdmi is used
@@ -448,11 +514,13 @@ interface       = 1
 ;hdmi_cts_compatibility:if hdmi cts test compatibility enable
 ;hdmi_power:            power name for hdmi
 ;hdmi_io_regulator:     controller's power
+;hdmi_cec_support:      enable cec funciton. (1:enable, 0:disable)
 ;----------------------------------------------------------------------------------
 [hdmi]
 hdmi_used              = 1
 hdmi_hdcp_enable       = 0
 hdmi_cts_compatibility = 0
+hdmi_cec_support       = 0
 hdmi_power             = "vcc18-hdmi"
 hdmi_io_regulator      = "vdd09-hdmi"
 hdmi_io_regulator_val  = 1000
@@ -465,7 +533,6 @@ hdmi_io_2              = port:PH13<2><0><default><default>
 hdmi_io_0              = port:PH11<7><0><default><default>
 hdmi_io_1              = port:PH12<7><0><default><default>
 hdmi_io_2              = port:PH13<7><0><default><default>
-
 ;----------------------------------------------------------------------------------
 ;lcd0 configuration
 
@@ -536,7 +603,6 @@ smart_color         = 90
 
 lcd_bl_en           = port:PH10<1><0><default><1>
 lcd_power           = "vcc-lcd"
-lcd_power1          = "vcc-lvds"
 
 lcdd0               = port:PD00<3><0><default><default>
 lcdd1               = port:PD01<3><0><default><default>
@@ -561,6 +627,22 @@ lcdd7               = port:PD07<7><0><default><default>
 lcdd8               = port:PD08<7><0><default><default>
 lcdd9               = port:PD09<7><0><default><default>
 
+;----------------------------------------------------------------------------------
+;tv configuration
+;dac_src            (dac no,support dac_src0~dac_src3,dac num max is 4)
+;interface          (interface type,1<->cvbs,2<->YPBPR,4<->SVIDEO)
+;dac_type           (0<->composite,1<->luma,2<->chroma,3<->reserved,4<->y/green,
+;                    5<->u/pb/blue,6<->v/pr/red)
+;NOTE:              tv0,tv1 can not use the same dac_src.
+;----------------------------------------------------------------------------------
+
+[tv0]
+used            = 1
+
+dac_src0        = 0
+dac_type0       = 0
+
+interface       = 1
 ;----------------------------------------------------------------------------------
 ;pwm config
 ;----------------------------------------------------------------------------------
@@ -890,15 +972,12 @@ sdc0_d2            = port:PF05<2><1><3><default>
 cd-gpios           = port:PF06<0><1><3><default>
 ;wp-gpios          = port:PG01<0><1><3><default>
 ;wp-inverted       =
-;broken-cd       =
+broken-cd       =
 sunxi-power-save-mode =
-sd-uhs-sdr50			=
-sd-uhs-ddr50			=
-sd-uhs-sdr104			=
-vmmc="vcc-card"
-vqmmc="vcc-pf"
-vdmmc="vcc-pf"
-max-frequency	   = 150000000
+sunxi-dis-signal-vol-sw =
+vmmc="vcc-sdcv"
+vqmmc="vcc-sdcvq33"
+vdmmc="vcc-sdcvd"
 
 
 
@@ -1350,6 +1429,7 @@ ir_protocol_used	= 0x00
 compatible                 = "axp233"
 used                       = 1
 pmu_id                     = 5
+reg                        = 0x34
 pmu_vbusen_func            = 0
 pmu_reset                  = 0
 pmu_irq_wakeup             = 1
@@ -1445,7 +1525,7 @@ pmu_init_chgvol            = 4200
 pmu_ac_vol                 = 4000
 pmu_ac_cur                 = 0
 pmu_usbpc_vol              = 4400
-pmu_usbpc_cur = 900
+pmu_usbpc_cur              = 500
 pmu_battery_warning_level1 = 15
 pmu_battery_warning_level2 = 0
 pmu_chgled_func            = 0
@@ -1543,7 +1623,7 @@ regulator6     = "axp233_rtc none vcc-rtc"
 regulator7     = "axp233_aldo1 none vcc33-wifi"
 regulator8     = "axp233_aldo2 none"
 regulator9     = "axp233_aldo3 none vdd18-lpddr vdd18-dram vcc-pll avcc"
-regulator10    = "axp233_dldo1 none vcc-pe vcc-pi vcc-pj iovdd-csi iovcc-csi afvcc-csi"
+regulator10    = "axp233_dldo1 none vcc-pe vcc-pi vcc-pj iovdd-csi afvcc-csi"
 regulator11    = "axp233_dldo2 none vdd09-hdmi"
 regulator12    = "axp233_eldo1 none vcc-pg vcc18-wifi vcc-dcxo-io"
 regulator13    = "axp233_eldo2 none vcc-pf"
@@ -1691,35 +1771,4 @@ s_jtag_tdi         = port:PL07<2><1><2><default>
 [Vdevice]
 Vdevice_used        = 1
 Vdevice_0           = port:PB01<4><1><2><default>
-
-;---------------------------------------------
-;
-; normal config: eg. px_bias = "pmu_name:supply_name:voltage"
-;
-;                    pmu_name = axp809, axp806
-;                    supply_name = dcdc1, dcdc2, aldo1, gpio1ldo, etc...
-;
-; special config: eg. px_bias = "floating"
-;                    when the gpio is float, use it
-;                    and the register will ignore it(use default value)
-;
-; special config: eg. px_bias = "constant:voltage"
-;                    when the gpio connect a constant voltage, use it
-;                    and the register will set a matching value
-;
-;useage: pa_bias = "axp809:dcdc1:3300" meant seting pa group bias is 3.3V
-;     pa_bias = "axp809:dcdc1:1003300" meant seting pa group bias is 3.3V, and set
-;                                               axp809 dcdc1 output voltage is 3.3v
-;---------------------------------------------
-[gpio_bias]
-;pa_bias         = "axp809:dcdc1:3300"
-;pd_bias         = "axp809:bldo1:3300"
-;pe_bias         = "axp809:dldo1:2800"
-;pf_bias         = "axp809:eldo2:3300"
-;pg_bias         = "axp809:eldo1:3300"
-;pi_bias         = "axp809:dldo1:2800"
-;pj_bias         = "axp809:dcdce:2800"
-;pl_bias         = "axp809:dcdce:2800"
-;vcc_bias         = "axp809:dcdc1:3300"
-;r_vcc_bias         = "axp809:dcdc1:3300"
 Vdevice_1           = port:PB02<4><1><2><default>

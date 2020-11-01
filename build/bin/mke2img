@@ -140,7 +140,7 @@ main() {
     # Exit codes 1 & 2 are OK, it means fs errors were successfully
     # corrected, hence our little trick with $ret.
     ret=0
-    e2fsck -yDf "${image}" >/dev/null || ret=$?
+    e2fsck -pDf "${image}" >/dev/null || ret=$?
     case ${ret} in
        0|1|2) ;;
        *)   errorN ${ret} "failed to run e2fsck on '%s' (ext%d)\n" \

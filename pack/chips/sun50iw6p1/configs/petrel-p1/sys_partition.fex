@@ -37,7 +37,7 @@ size = 16384
 [partition]
     name         = bootloader
     size	     = 32768
-    downloadfile = "bootloader.fex"
+    downloadfile = "boot-resource.fex"
     user_type    = 0x8000
 
 ;------------------------------>mmcblk0p5/nandb
@@ -57,9 +57,17 @@ size = 16384
 ;------------------------------>mmcblk0p7/nandd
 [partition]
     name         = system
-    size         = 3145728
+    size         = 4194304
     downloadfile = "system.fex"
     user_type    = 0x8000
+
+;------------------------------>
+[partition]
+    name         = vendor
+    size         = 614400
+    downloadfile = "vendor.fex"
+    user_type    = 0x8000
+
 ;------------------------------>nandk, system image verity hash tree block 
 [partition]
     name         = verity_block 
@@ -83,7 +91,7 @@ size = 16384
 ;------------------------------> mmcblk0p10/nandg
 [partition]
     name         = sysrecovery
-    size         = 3145728
+    size         = 4194304
     downloadfile = "sysrecovery.fex"
     user_type    = 0x8000
     verify       = 0
@@ -102,10 +110,13 @@ size = 16384
     ro           = 0
     user_type    = 0x8000
 
+;------------------------------>device tree overlay
 ;------------------------------> mmcblk0p13/nandj
+;------------------------------>dtbo
 [partition]
-    name         = Reserve0
-    size         = 32768
+    name         = dtbo
+    size         = 4096
+    downloadfile = "dtbo.fex"
     user_type    = 0x8000
 
 ;------------------------------> mmcblk0p14/nandk

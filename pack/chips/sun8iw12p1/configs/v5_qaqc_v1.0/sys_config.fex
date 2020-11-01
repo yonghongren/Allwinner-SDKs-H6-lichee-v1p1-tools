@@ -141,7 +141,7 @@ dram_tpr9	= 0
 dram_tpr10	= 0x0000
 dram_tpr11	= 0x00000000
 dram_tpr12	= 0x00000000
-dram_tpr13	= 0x04000284
+dram_tpr13	= 0x1C000284
 
 ;----------------------------------------------------------------------------------
 ;os life cycle para configuration
@@ -186,6 +186,7 @@ gmac-power1        = ""
 gmac-power2        = ""
 tx-delay           = 7
 rx-delay           = 31
+use_ephy25m        = 1
 
 ;----------------------------------------------------------------------------------
 ;i2c configuration
@@ -329,6 +330,17 @@ channel2_compare_lowdata	= 460000
 channel2_compare_higdata	= 200000
 channel3_compare_lowdata	= 460000
 channel3_compare_higdata	= 1200000
+key_cnt                         = 5
+key0_vol                        = 115
+key0_val                        = 115
+key1_vol                        = 240
+key1_val                        = 114
+key2_vol                        = 500
+key2_val                        = 139
+key3_vol                        = 700
+key3_val                        = 28
+key4_vol                        = 890
+key4_val                        = 102
 
 ;----------------------------------------------------------------------------------
 ;resistance tp configuration
@@ -495,6 +507,7 @@ output_mode=4
 ;hdmi_hdcp_enable:      if hdmi hdcp function enable
 ;hdmi_cts_compatibility:if hdmi cts test compatibility enable
 ;hdmi_power:            power name for hdmi
+;hdmi_cec_support:      enable cec funciton. (1:enable, 0:disable)
 ;hdmi_io_regulator:     controller's power
 ;----------------------------------------------------------------------------------
 [hdmi]
@@ -502,6 +515,7 @@ hdmi_used              = 1
 hdmi_hdcp_enable       = 0
 hdmi_cts_compatibility = 0
 hdmi_power             = "vcc18-hdmi"
+hdmi_cec_support       = 0
 hdmi_io_regulator      = "vdd09-hdmi"
 hdmi_io_regulator_val  = 1000
 
@@ -513,8 +527,6 @@ hdmi_io_2              = port:PH13<2><0><default><default>
 hdmi_io_0              = port:PH11<7><0><default><default>
 hdmi_io_1              = port:PH12<7><0><default><default>
 hdmi_io_2              = port:PH13<7><0><default><default>
-
-
 ;----------------------------------------------------------------------------------
 ;lcd0 configuration
 
@@ -564,7 +576,7 @@ lcd_height          = 52
 lcd_dclk_freq       = 66
 
 lcd_pwm_used        = 1
-lcd_pwm_ch          = 8
+lcd_pwm_ch          = 0
 lcd_pwm_freq        = 50000
 lcd_pwm_pol         = 1
 lcd_pwm_max_limit   = 255
@@ -592,11 +604,27 @@ lcd_cmap_en         = 0
 
 lcdgamma4iep        = 22
 
-lcd_bl_en           = port:PH10<1><0><default><1>
+lcd_bl_en           = port:PB07<1><0><default><1>
 lcd_power           = "axp233_dc1sw"
 
-lcd_gpio_0          = port:PG13<1><0><default><1>
+lcd_gpio_0          = port:PB06<1><0><default><1>
 
+;----------------------------------------------------------------------------------
+;tv configuration
+;dac_src            (dac no,support dac_src0~dac_src3,dac num max is 4)
+;interface          (interface type,1<->cvbs,2<->YPBPR,4<->SVIDEO)
+;dac_type           (0<->composite,1<->luma,2<->chroma,3<->reserved,4<->y/green,
+;                    5<->u/pb/blue,6<->v/pr/red)
+;NOTE:              tv0,tv1 can not use the same dac_src.
+;----------------------------------------------------------------------------------
+
+[tv0]
+used            = 1
+
+dac_src0        = 0
+dac_type0       = 0
+
+interface       = 1
 ;----------------------------------------------------------------------------------
 ;pwm config
 ;----------------------------------------------------------------------------------
@@ -772,7 +800,7 @@ sensor0_iovdd         = ""
 sensor0_iovdd_vol     = 2800000
 sensor0_avdd          = ""
 sensor0_avdd_vol      = 2800000
-sensor0_dvdd          = "dvdd-csi-1"
+sensor0_dvdd          = ""
 sensor0_dvdd_vol      = 1800000
 sensor0_power_en      =
 sensor0_reset         = port:PI12<1><0><1><0>
@@ -794,7 +822,7 @@ sensor1_iovdd         = ""
 sensor1_iovdd_vol     = 2800000
 sensor1_avdd          = ""
 sensor1_avdd_vol      = 2800000
-sensor1_dvdd          = "dvdd-csi-2"
+sensor1_dvdd          = ""
 sensor1_dvdd_vol      = 1800000
 sensor1_power_en      =
 sensor1_reset         = port:PI13<1><0><1><0>
@@ -1543,7 +1571,7 @@ pmu_init_chgvol            = 4200
 pmu_ac_vol                 = 4000
 pmu_ac_cur                 = 0
 pmu_usbpc_vol              = 4400
-pmu_usbpc_cur = 900
+pmu_usbpc_cur              = 500
 pmu_battery_warning_level1 = 15
 pmu_battery_warning_level2 = 0
 pmu_chgled_func            = 1
@@ -1646,8 +1674,8 @@ regulator11     = "axp233_dldo2 none vdd09-hdmi"
 regulator12     = "axp233_eldo1 none vcc-pg vcc18-wifi vcc-dcxo-io"
 regulator13     = "axp233_eldo2 none vcc-pf"
 regulator14     = "axp233_eldo3 none vcc-pl"
-regulator15     = "axp233_ldoio0 none dvdd-csi dvdd-csi-1"
-regulator16     = "axp233_ldoio1 none dvdd-csi-2"
+regulator15     = "axp233_ldoio0 none dvdd-csi"
+regulator16     = "axp233_ldoio1 none"
 regulator17     = "axp233_swout none"
 regulator18     = "axp233_dc1sw none vcc-lcd vcc-ctp"
 regulator19     = "axp233_dc5ldo none vdd-cpus"
@@ -1800,33 +1828,3 @@ gpio_para_used          = 0
 gpio_num                = 1
 gpio_pin_1              =  port:PB01<1><3><3><1>
 
-;---------------------------------------------
-;
-; normal config: eg. px_bias = "pmu_name:supply_name:voltage"
-;
-;                    pmu_name = axp809, axp806
-;                    supply_name = dcdc1, dcdc2, aldo1, gpio1ldo, etc...
-;
-; special config: eg. px_bias = "floating"
-;                    when the gpio is float, use it
-;                    and the register will ignore it(use default value)
-;
-; special config: eg. px_bias = "constant:voltage"
-;                    when the gpio connect a constant voltage, use it
-;                    and the register will set a matching value
-;
-;useage: pa_bias = "axp809:dcdc1:3300" meant seting pa group bias is 3.3V
-;     pa_bias = "axp809:dcdc1:1003300" meant seting pa group bias is 3.3V, and set
-;                                               axp809 dcdc1 output voltage is 3.3v
-;---------------------------------------------
-[gpio_bias]
-;pa_bias         = "axp809:dcdc1:3300"
-;pd_bias         = "axp809:bldo1:3300"
-;pe_bias         = "axp809:dldo1:2800"
-;pf_bias         = "axp809:eldo2:3300"
-;pg_bias         = "axp809:eldo1:3300"
-;pi_bias         = "axp809:dldo1:2800"
-;pj_bias         = "axp809:dcdce:2800"
-;pl_bias         = "axp809:dcdce:2800"
-;vcc_bias         = "axp809:dcdc1:3300"
-;r_vcc_bias         = "axp809:dcdc1:3300"

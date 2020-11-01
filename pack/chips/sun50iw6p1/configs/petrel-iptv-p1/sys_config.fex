@@ -18,12 +18,12 @@ eraseflag   = 1
 ; advert_enable       0-close advert logo    1-open advert logo     (只有多核启动下有效)
 ;----------------------------------------------------------------------------------
 [target]
-boot_clock       = 1320
+boot_clock       = 1440
 storage_type     = -1
 burn_key         = 0
 dragonboard_test = 0
 power_mode       = 0
-advert_enable	 = 1
+advert_enable	 = 0
 
 [secure]
 dram_region_mbytes = 64
@@ -152,24 +152,14 @@ pll9            = 297
 pll10           = 264
 
 ;*****************************************************************************
-; sdram configuration
-;
-; if dram_clk ≠ 0, will use dram_clk to set dram clk.
-; if dram_clk =  0, will use dram_tpr7 to set dram clk:
-; dram_tpr7[31:24] to set DDR4 clk,
-; dram_tpr7[23:16] to set DDR3 clk,
-; dram_tpr7[15: 8] to set LPDDR2 clk,
-; dram_tpr7[ 7: 0] to set LPDDR3 clk.
-; ps: unit = 12M.
-; for example, if dram_tpr7[31:24] = 0x10,
-; then the dram clk of DDR4 will be (16*12)M.
+;sdram configuration
 ;
 ;*****************************************************************************
 [dram_para]
 dram_clk     = 0
-dram_type    = 7
+dram_type    = 3
 dram_zq      = 0x3b3bfb
-dram_odt_en  = 0x31
+dram_odt_en  = 0x1
 dram_para1   = 0x30FA
 dram_para2   = 0x04000000
 dram_mr0     = 0x1c70
@@ -233,6 +223,7 @@ rx-delay           = 0
 twi0_used        = 0
 twi0_scl         = port:PD25<2><default><default><default>
 twi0_sda         = port:PD26<2><default><default><default>
+twi_regulator    = "vcc-io"
 
 [twi0_suspend]
 twi0_scl         = port:PD25<7><default><default><default>
@@ -242,6 +233,7 @@ twi0_sda         = port:PD26<7><default><default><default>
 twi1_used        = 0
 twi1_scl         = port:PH05<4><default><default><default>
 twi1_sda         = port:PH06<4><default><default><default>
+twi_regulator    = "vcc-io"
 
 [twi1_suspend]
 twi1_scl         = port:PH05<7><default><default><default>
@@ -251,6 +243,7 @@ twi1_sda         = port:PH06<7><default><default><default>
 twi2_used        = 0
 twi2_scl         = port:PD23<2><default><default><default>
 twi2_sda         = port:PD24<2><default><default><default>
+twi_regulator    = "vcc-io"
 
 [twi2_suspend]
 twi2_scl         = port:PD23<7><default><default><default>
@@ -260,6 +253,7 @@ twi2_sda         = port:PD24<7><default><default><default>
 twi3_used        = 1
 twi3_scl         = port:PB17<2><default><default><default>
 twi3_sda         = port:PB18<2><default><default><default>
+twi_regulator    = "vcc-io"
 ;----------------------------------------------------------------------------------
 ;TWI device configuration
 ;compatible        --- device name
@@ -383,18 +377,12 @@ spi1_miso       = port:PH06<7><default><default><default>
 ;pcie controller configuration
 ;----------------------------------------------------------------------------------
 [pcie]
-pcie_used		= 0
-pcie_rest		= port:PH03<1><default><default><default>
-pcie_power		= port:PL08<1><default><default><default>
-pcie_reg		= port:PM03<1><default><default><default>
-pcie_iodvdd		= 1800
-pcie_speed_gen		= 0x02
-pcie_vdd		= "vdd-pcie"
-pcie_vdd_vol		= 900000
-pcie_vcc		= "vcc-pcie"
-pcie_vcc_vol		= 1800000
-pcie_vcc_slot		= "vcc-pcie-slot"
-pcie_vcc_slot_vol	= 3300000
+pcie_used	= 0
+pcie_perst	= port:PD22<1><default><default><default>
+pcie_power	=
+pcie_reg	=
+pcie_iodvdd	= 1800
+pcie_speed_gen	= 0x02
 
 ;----------------------------------------------------------------------------------
 ;resistance tp configuration
@@ -674,12 +662,12 @@ lcdd9               = port:PD21<7><0><default><default>
 
 [hdmi]
 hdmi_used = 1
-;hdmi_power = "vcc3v3-hdmi"
+hdmi_power = "vcc-hdmi"
 hdmi_hdcp_enable = 0
 hdmi_hdcp22_enable = 0
 hdmi_cts_compatibility = 0
 hdmi_cec_support = 1
-hdmi_cec_super_standby = 1
+hdmi_cec_super_standby = 0
 hdmi_skip_bootedid = 1
 ddc_scl  = port:PH8<2><default><1><default>
 ddc_sda  = port:PH9<2><default><1><default>
@@ -785,124 +773,164 @@ pwm_positive        = port:PL08<7><0><default><default>
 ;cvbs_mode    -   as default config for output of tv in homlet. 11:PAL; 14:NTSC
 ;hdmi_mode_check - disable/enable the function of checking hdmi mode, 0 is disable, 1 is enable
 ;-----------------------------------------------------------------
-;[boot_disp]
-;auto_hpd        = 1
-;output_disp     = 0
-;output_type     = 2
-;output_mode     = 11
-;hdmi_channel    = 0
-;hdmi_mode       = 4
-;cvbs_channel    = 1
-;cvbs_mode       = 11
-;hdmi_mode_check = 1
-;output_full     = 1
+[boot_disp]
+output_disp       = 0
+output_type       = 3
+output_mode       = 10
+output_format     = 1
+output_bits       = 0
+output_eotf       = 4
+output_cs         = 260
 
 ;--------------------------------------------------------------------------------
-;csi (COMS Sensor Interface) configuration
-;csi(x)_dev(x)_used: 0:disable 1:enable
-;csi(x)_dev(x)_isp_used 0:not use isp 1:use isp
-;csi(x)_dev(x)_fmt: 0:yuv 1:bayer raw rgb
-;csi(x)_dev(x)_stby_mode: 0:not shut down power at standby 1:shut down power at standby
-;csi(x)_dev(x)_vflip: flip in vertical direction 0:disable 1:enable
-;csi(x)_dev(x)_hflip: flip in horizontal direction 0:disable 1:enable
-;csi(x)_dev(x)_iovdd: camera module io power handle string, pmu power supply
-;csi(x)_dev(x)_iovdd_vol: camera module io power voltage, pmu power supply
-;csi(x)_dev(x)_avdd:	camera module analog power handle string, pmu power supply
-;csi(x)_dev(x)_avdd_vol:	camera module analog power voltage, pmu power supply
-;csi(x)_dev(x)_dvdd:	camera module core power handle string, pmu power supply
-;csi(x)_dev(x)_dvdd_vol:	camera module core power voltage, pmu power supply
-;csi(x)_dev(x)_afvdd:	camera module vcm power handle string, pmu power supply
-;csi(x)_dev(x)_afvdd_vol:	camera module vcm power voltage, pmu power supply
-;fill voltage in uV, e.g. iovdd = 2.8V, csix_iovdd_vol = 2800000
+;vin (video input modules) configuration
+;vind(x)_used: 0:disable 1:enable, main node for vin
+;csi(x)_used: 0:disable 1:enable
+;csi(x)_pck: parallel csi function pin
+;csi(x)_mck: parallel csi function pin
+;csi(x)_hsync: parallel csi function pin
+;csi(x)_vsync: parallel csi function pin
+;csi(x)_d0: parallel csi function pin
+;csi(x)_d1: parallel csi function pin
+;csi(x)_d2: parallel csi function pin
+;csi(x)_d3: parallel csi function pin
+;csi(x)_d4: parallel csi function pin
+;csi(x)_d5: parallel csi function pin
+;csi(x)_d6: parallel csi function pin
+;csi(x)_d7: parallel csi function pin
+;flash(x)_used: 0:disable 1:enable
+;flash(x)_type: 0:FLASH_RELATING, 1:FLASH_EN_INDEPEND, 2:FLASH_POWER
+;flash(x)_en: flash enable gpio, type = 0 of 1
+;flash(x)_mode: flash mode gpio, type = 0 of 1
+;flash(x)_flvdd: flash module io power handle string, pmu power supply, type = 2
+;flash(x)_flvdd_vol: flash module io power voltage, pmu power supply, type = 2
+;actuator(x)_used: 0:disable 1:enable
+;actuator(x)_name: vcm name
+;actuator(x)_slave: vcm iic slave address
+;actuator(x)_af_pwdn: vcm power down gpio
+;actuator(x)_afvdd: vcm power handle string, pmu power supply
+;actuator(x)_afvdd_vol: vcm power voltage, pmu power supply
+;sensor(x)_used: 0:disable 1:enable
+;sensor(x)_isp_used 0:not use isp 1:use isp
+;sensor(x)_fmt: 0:yuv 1:bayer raw rgb
+;sensor(x)_stby_mode: 0:not shut down power at standby 1:shut down power at standby
+;sensor(x)_vflip: flip in vertical direction 0:disable 1:enable
+;sensor(x)_hflip: flip in horizontal direction 0:disable 1:enable
+;sensor(x)_iovdd: camera module io power handle string, pmu power supply
+;sensor(x)_iovdd_vol: camera module io power voltage, pmu power supply
+;sensor(x)_avdd:	camera module analog power handle string, pmu power supply
+;sensor(x)_avdd_vol:	camera module analog power voltage, pmu power supply
+;sensor(x)_dvdd:	camera module core power handle string, pmu power supply
+;sensor(x)_dvdd_vol:	camera module core power voltage, pmu power supply
+;sensor(x)_power_en:	camera module power enable gpio
+;sensor(x)_reset:	camera module reset gpio
+;sensor(x)_pwdn:	camera module pwdn gpio
+;fill voltage in uV, e.g. iovdd = 2.8V, sensorx_iovdd_vol = 2800000
 ;fill handle string as below:
-;axp22_eldo3
-;axp22_dldo4
+;csi-avdd
+;csi-iovdd
 ;axp22_eldo2
 ;fill handle string "" when not using any pmu power supply
+;vinc(x)_used: 0:disable 1:enable
+;vinc(x)_sensor_list: use sensor list
 ;--------------------------------------------------------------------------------
+[vind0]
+vind0_used		= 1
 
-[csi0]
-csi0_used				= 0
-csi0_sensor_list		= 0
-csi0_pck             	= port:PD00<4><default><default><default>
-csi0_mck           	 	= port:PD01<4><0><1><0>
-csi0_hsync           	= port:PD02<4><default><default><default>
-csi0_vsync           	= port:PD03<4><default><default><default>
-csi0_d0              	= port:PD04<4><default><default><default>
-csi0_d1              	= port:PD05<4><default><default><default>
-csi0_d2              	= port:PD06<4><default><default><default>
-csi0_d3              	= port:PD07<4><default><default><default>
-csi0_d4              	= port:PD08<4><default><default><default>
-csi0_d5              	= port:PD09<4><default><default><default>
-csi0_d6              	= port:PD10<4><default><default><default>
-csi0_d7              	= port:PD11<4><default><default><default>
-csi0_sck           	 	= port:PD12<4><default><default><default>
-csi0_sda           	 	= port:PD13<4><default><default><default>
+[vind0/csi0]
+csi0_used               = 1
+csi0_pck                = port:PD00<4><default><default><default>
+csi0_hsync              = port:PD02<4><default><default><default>
+csi0_vsync              = port:PD03<4><default><default><default>
+csi0_d0                 = port:PD04<4><default><default><default>
+csi0_d1                 = port:PD05<4><default><default><default>
+csi0_d2                 = port:PD06<4><default><default><default>
+csi0_d3                 = port:PD07<4><default><default><default>
+csi0_d4                 = port:PD08<4><default><default><default>
+csi0_d5                 = port:PD09<4><default><default><default>
+csi0_d6                 = port:PD10<4><default><default><default>
+csi0_d7                 = port:PD11<4><default><default><default>
 
-[csi0/csi0_dev0]
-csi0_dev0_used			= 0
-csi0_dev0_mname         = "ov5640"
-csi0_dev0_twi_addr		= 0x78
-csi0_dev0_pos			= "rear"
-csi0_dev0_isp_used      = 1
-csi0_dev0_fmt           = 0
-csi0_dev0_stby_mode     = 0
-csi0_dev0_vflip         = 0
-csi0_dev0_hflip         = 0
-csi0_dev0_iovdd         = "iovdd-csi"
-csi0_dev0_iovdd_vol     = 2800000
-csi0_dev0_avdd          = "avdd-csi"
-csi0_dev0_avdd_vol      = 2800000
-csi0_dev0_dvdd          = "dvdd-csi-18"
-csi0_dev0_dvdd_vol      = 1500000
-csi0_dev0_afvdd         = "afvcc-csi"
-csi0_dev0_afvdd_vol     = 2800000
-;csi0_dev0_power_en      = port:PB04<1><0><1><0>
-csi0_dev0_power_en      =
-csi0_dev0_reset         = port:PE14<1><0><1><0>
-csi0_dev0_pwdn          = port:PE15<1><0><1><0>
-csi0_dev0_flash_used    = 0
-csi0_dev0_flash_type    = 2
-csi0_dev0_flash_en      =
-csi0_dev0_flash_mode    =
-csi0_dev0_flvdd	    	= ""
-csi0_dev0_flvdd_vol		= 
-csi0_dev0_af_pwdn       =
-csi0_dev0_act_used      = 0
-csi0_dev0_act_name      = "ad5820_act"
-csi0_dev0_act_slave     = 0x18
+[vind0/csi_cci0]
+csi_cci0_used           = 1
+csi_cci0_sck            = port:PD12<4><default><default><default>
+csi_cci0_sda            = port:PD13<4><default><default><default>
 
-[csi0/csi0_dev1]
-csi0_dev1_used			= 0
-csi0_dev1_mname         = ""
-csi0_dev1_twi_addr		= 0x78
-csi0_dev1_pos			= "rear"
-csi0_dev1_isp_used      = 1
-csi0_dev1_fmt           = 0
-csi0_dev1_stby_mode     = 0
-csi0_dev1_vflip         = 0
-csi0_dev1_hflip         = 0
-csi0_dev1_iovdd         = "iovdd-csi"
-csi0_dev1_iovdd_vol     = 2800000
-csi0_dev1_avdd          = "avdd-csi"
-csi0_dev1_avdd_vol      = 2800000
-csi0_dev1_dvdd          = "dvdd-csi-18"
-csi0_dev1_dvdd_vol      = 1500000
-csi0_dev1_afvdd         = "afvcc-csi"
-csi0_dev1_afvdd_vol     = 2800000
-csi0_dev1_power_en      =
-csi0_dev1_reset         = 
-csi0_dev1_pwdn          =
-csi0_dev1_flash_used    = 0
-csi0_dev1_flash_type    = 2
-csi0_dev1_flash_en      =
-csi0_dev1_flash_mode    =
-csi0_dev1_flvdd	    	= ""
-csi0_dev1_flvdd_vol		= 
-csi0_dev1_af_pwdn       =
-csi0_dev1_act_used      = 0
-csi0_dev1_act_name      = "ad5820_act"
-csi0_dev1_act_slave     = 0x18
+[vind0/flash0]
+flash0_used		= 1
+flash0_type		= 2
+flash0_en		=
+flash0_mode		=
+flash0_flvdd		= ""
+flash0_flvdd_vol	=
+
+[vind0/actuator0]
+actuator0_used		= 0
+actuator0_name		= "ad5820_act"
+actuator0_slave		= 0x18
+actuator0_af_pwdn       =
+actuator0_afvdd         = ""
+actuator0_afvdd_vol     = 2800000
+
+[vind0/sensor0]
+sensor0_used          = 1
+sensor0_mname         = "ov5640"
+sensor0_twi_cci_id    = 0
+sensor0_twi_addr      = 0x78
+sensor0_pos           = "rear"
+sensor0_isp_used      = 0
+sensor0_fmt           = 0
+sensor0_stby_mode     = 1
+sensor0_vflip         = 0
+sensor0_hflip         = 0
+sensor0_iovdd         = ""
+sensor0_iovdd_vol     = 2800000
+sensor0_avdd          = ""
+sensor0_avdd_vol      = 2800000
+sensor0_dvdd          = ""
+sensor0_dvdd_vol      = 1800000
+sensor0_power_en      =
+sensor0_reset         = port:PD18<0><0><1><0>
+sensor0_pwdn          = port:PD21<0><0><1><0>
+
+[vind0/sensor1]
+sensor1_used          = 0
+sensor1_mname         = "ov5647"
+sensor1_twi_cci_id    = 0
+sensor1_twi_addr      = 0x6c
+sensor1_pos           = "front"
+sensor1_isp_used      = 0
+sensor1_fmt           = 0
+sensor1_stby_mode     = 1
+sensor1_vflip         = 0
+sensor1_hflip         = 0
+sensor1_iovdd         = ""
+sensor1_iovdd_vol     = 2800000
+sensor1_avdd          = ""
+sensor1_avdd_vol      = 2800000
+sensor1_dvdd          = ""
+sensor1_dvdd_vol      = 1800000
+sensor1_power_en      =
+sensor1_reset         = port:PH5<0><0><1><0>
+sensor1_pwdn          = port:PH6<0><0><1><0>
+
+[vind0/vinc0]
+vinc0_used		= 1
+vinc0_csi_sel		= 0
+vinc0_mipi_sel		= 0xff
+vinc0_isp_sel		= 0
+vinc0_rear_sensor_sel	= 0
+vinc0_front_sensor_sel	= 1
+vinc0_sensor_list	= 0
+
+[vind0/vinc1]
+vinc1_used		= 1
+vinc1_csi_sel		= 0
+vinc1_mipi_sel		= 0xff
+vinc1_isp_sel		= 0
+vinc1_rear_sensor_sel	= 0
+vinc1_front_sensor_sel	= 1
+vinc1_sensor_list	= 0
 
 ;--------------------------------------------------------------------------------
 ;tv configuration
@@ -1087,7 +1115,7 @@ usb_id_gpio         =
 usb_det_vbus_gpio   =
 usb_drv_vbus_gpio   =
 usb_host_init_state = 1
-usb_regulator_io    = "nocare"
+usb_regulator_io    = "vcc-usb"
 usb_wakeup_suspend  = 0
 ;---       USB Device
 usb_luns            = 3
@@ -1102,7 +1130,7 @@ rndis_wceis         = 1
 usbc1_used          = 1
 usb_drv_vbus_gpio   = port:PL05<1><0><default><1>
 usb_host_init_state = 1
-usb_regulator_io    = "nocare"
+usb_regulator_io    = "vcc-usb"
 usb_wakeup_suspend  = 0
 
 ;--------------------------------
@@ -1112,7 +1140,7 @@ usb_wakeup_suspend  = 0
 usbc2_used          = 0
 usb_drv_vbus_gpio   =
 usb_host_init_state = 1
-usb_regulator_io    = "nocare"
+usb_regulator_io    = "vcc-usb"
 usb_wakeup_suspend  = 0
 
 ;--------------------------------
@@ -1122,7 +1150,7 @@ usb_wakeup_suspend  = 0
 usbc3_used          = 0
 usb_drv_vbus_gpio   =
 usb_host_init_state = 1
-usb_regulator_io    = "nocare"
+usb_regulator_io    = "vcc-usb"
 usb_wakeup_suspend  = 0
 
 ;--------------------------------
@@ -1456,12 +1484,6 @@ ir_power_key_code16  = 0xdc
 ir_addr_code16       = 0x4cb3
 ir_power_key_code17  = 0xdc
 ir_addr_code17       = 0x4db2
-ir_power_key_code18  = 0x96
-ir_addr_code18       = 0xc43b
-ir_power_key_code19  = 0xdc
-ir_addr_code19       = 0x4cb3
-ir_power_key_code20  = 0x0c
-ir_addr_code20       = 0x6b86
 
 
 rc5_ir_power_key_code0 = 0x01
@@ -1520,12 +1542,12 @@ regulator4      = "axp806_dcdcd none vdd-sys vdd-hdmi vdd-pcie vdd-usb"
 regulator5      = "axp806_dcdce none vcc-dram"
 regulator6      = "axp806_aldo1 none vcc-pl vcc-led vcc-ir vcc-pg vcc-pm vcc-ts"
 regulator7      = "axp806_aldo2 none ac-ldoin vcc-audio-33 vcc-ephy usb-dvdd vcc-tv"
-regulator8      = "axp806_aldo3 none vcc-pcie-slot"
+regulator8      = "axp806_aldo3 none"
 regulator9      = "axp806_bldo1 none vdd-dram-18 vdd-bias vcc-pll"
-regulator10     = "axp806_bldo2 none vcc-emmc-18 vdd-efuse vcc-pcie vcc-hdmi vcc-emmcvq18"
+regulator10     = "axp806_bldo2 none vcc-emmc-18 vdd-efuse vcc-hdmi vcc-emmcvq18"
 regulator11     = "axp806_bldo3 none"
 regulator12     = "axp806_bldo4 none"
-regulator13     = "axp806_cldo1 none vcc-io vcc-nand vcc-card vcc-pd vcc-usb vcc-uart vcc-jtagx vcc-emmc-33 vcc-camera-33 vcc-emmcv vcc-sdcv vcc-sdcvq33 vcc-sdcvd"
+regulator13     = "axp806_cldo1 none vcc-io vcc-nand vcc-card vcc-pd vcc-usb vcc-pcie vcc-uart vcc-jtagx vcc-emmc-33 vcc-camera-33 vcc-pcie-slot vcc-emmcv vcc-sdcv vcc-sdcvq33 vcc-sdcvd"
 regulator14     = "axp806_cldo2 none"
 regulator15     = "axp806_cldo3 none vcc-wifi"
 regulator16     = "axp806_sw none"
@@ -1683,7 +1705,7 @@ Vdevice_1           = port:PH10<5><1><2><default>
 ;max_normal_level : restrict the level for normal mode.
 ;----------------------------------------------------------------------------------
 [gpu]
-gpu_idle          = 0
+gpu_idle          = 1
 dvfs_status       = 1
 temp_ctrl_status  = 1
 scene_ctrl_status = 1
@@ -1719,10 +1741,7 @@ gpio2           =  port:PL04<1><default><default><0>
 ;--------------------------------------------------------------------------------
 [gpio_power_key]
 compatible                             = "allwinner,sunxi-gpio-power-key"
-device_type                            = "gpio_power_key"
+device_type                            = gpio_power_key
 gpio_power_key_used                    = 0
 key_io                                 = port:PL05<0><default><default><0>
 trigger_mode                           = 1
-
-[auto_print]
-auto_print_used = 0
